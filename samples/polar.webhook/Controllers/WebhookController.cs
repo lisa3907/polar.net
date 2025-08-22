@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
-using Polar.Models;
+using System.Text.Json.Serialization;
+using PolarNet.Models;
 
 namespace Polar.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/webhook")]
 public class WebhookController : ControllerBase
 {
     private readonly IConfiguration _configuration;
@@ -17,6 +18,23 @@ public class WebhookController : ControllerBase
         _configuration = configuration;
         _logger = logger;
         _webhookSecret = _configuration["PolarSettings:WebhookSecret"] ?? "";
+    }
+
+    // GET: api/webhook/test
+    [HttpGet("test")]
+    public IActionResult Test()
+    {
+        return Ok(new
+        {
+            status = "running",
+            message = "Webhook server is running!",
+            timestamp = DateTime.UtcNow,
+            endpoints = new[]
+            {
+                "/api/webhook/test - 테스트 엔드포인트",
+                "/api/webhook/polar - Polar webhook 수신"
+            }
+        });
     }
 
     [HttpPost("polar")]
@@ -31,9 +49,9 @@ public class WebhookController : ControllerBase
             Request.Body.Position = 0;
 
             // Get webhook headers
-            var webhookId = Request.Headers["webhook-id"].FirstOrDefault();
-            var webhookSignature = Request.Headers["webhook-signature"].FirstOrDefault();
-            var webhookTimestamp = Request.Headers["webhook-timestamp"].FirstOrDefault();
+            var webhookId = Request.Headers["Polar-Webhook-Id"].FirstOrDefault() ?? Request.Headers["webhook-id"].FirstOrDefault();
+            var webhookSignature = Request.Headers["Polar-Webhook-Signature"].FirstOrDefault() ?? Request.Headers["webhook-signature"].FirstOrDefault();
+            var webhookTimestamp = Request.Headers["Polar-Webhook-Timestamp"].FirstOrDefault() ?? Request.Headers["webhook-timestamp"].FirstOrDefault();
 
             _logger.LogInformation("Received webhook - ID: {WebhookId}, Timestamp: {Timestamp}", 
                 webhookId, webhookTimestamp);
@@ -50,46 +68,50 @@ public class WebhookController : ControllerBase
                 // the verification according to Polar's documentation
             }
 
-            // Parse the webhook payload
-            var payload = JsonSerializer.Deserialize<JsonElement>(body);
-            var eventType = payload.GetProperty("type").GetString();
-            var data = payload.GetProperty("data");
+            // Parse the webhook payload using System.Text.Json
+            var payload = JsonSerializer.Deserialize<PolarWebhookPayload>(body);
+            if (payload == null)
+            {
+                _logger.LogError("❌ Webhook 페이로드 파싱 실패");
+                return BadRequest("Invalid payload");
+            }
+            var eventType = payload.Type;
 
             _logger.LogInformation("Processing webhook event: {EventType}", eventType);
 
             // Process different webhook event types
-            switch (eventType)
+        switch (eventType)
             {
                 case "checkout.created":
-                    await HandleCheckoutCreated(data);
+                    await HandleCheckoutCreated(payload.Data);
                     break;
 
                 case "checkout.updated":
-                    await HandleCheckoutUpdated(data);
+                    await HandleCheckoutUpdated(payload.Data);
                     break;
 
                 case "order.created":
-                    await HandleOrderCreated(data);
+                    await HandleOrderCreated(payload.Data);
                     break;
 
                 case "subscription.created":
-                    await HandleSubscriptionCreated(data);
+                    await HandleSubscriptionCreated(payload.Data);
                     break;
 
                 case "subscription.updated":
-                    await HandleSubscriptionUpdated(data);
+                    await HandleSubscriptionUpdated(payload.Data);
                     break;
 
                 case "subscription.canceled":
-                    await HandleSubscriptionCanceled(data);
+                    await HandleSubscriptionCanceled(payload.Data);
                     break;
 
                 case "customer.created":
-                    await HandleCustomerCreated(data);
+                    await HandleCustomerCreated(payload.Data);
                     break;
 
                 case "customer.updated":
-                    await HandleCustomerUpdated(data);
+                    await HandleCustomerUpdated(payload.Data);
                     break;
 
                 default:
@@ -99,7 +121,7 @@ public class WebhookController : ControllerBase
 
             return Ok(new { received = true });
         }
-        catch (JsonException ex)
+    catch (JsonException ex)
         {
             _logger.LogError(ex, "Invalid JSON in webhook payload");
             return BadRequest(new { error = "Invalid JSON payload" });
@@ -113,8 +135,8 @@ public class WebhookController : ControllerBase
 
     private async Task HandleCheckoutCreated(JsonElement data)
     {
-        var checkoutId = data.GetProperty("id").GetString();
-        var status = data.GetProperty("status").GetString();
+        string? checkoutId = data.TryGetProperty("id", out var id) ? id.GetString() : null;
+        string? status = data.TryGetProperty("status", out var s) ? s.GetString() : null;
         
         _logger.LogInformation("Checkout created - ID: {CheckoutId}, Status: {Status}", 
             checkoutId, status);
@@ -125,8 +147,8 @@ public class WebhookController : ControllerBase
 
     private async Task HandleCheckoutUpdated(JsonElement data)
     {
-        var checkoutId = data.GetProperty("id").GetString();
-        var status = data.GetProperty("status").GetString();
+        string? checkoutId = data.TryGetProperty("id", out var id) ? id.GetString() : null;
+        string? status = data.TryGetProperty("status", out var s) ? s.GetString() : null;
         
         _logger.LogInformation("Checkout updated - ID: {CheckoutId}, Status: {Status}", 
             checkoutId, status);
@@ -163,10 +185,10 @@ public class WebhookController : ControllerBase
 
     private async Task HandleOrderCreated(JsonElement data)
     {
-        var orderId = data.GetProperty("id").GetString();
-        var customerId = data.GetProperty("customer_id").GetString();
-        var amount = data.GetProperty("amount").GetInt32();
-        var currency = data.GetProperty("currency").GetString();
+        string? orderId = data.TryGetProperty("id", out var id) ? id.GetString() : null;
+        string? customerId = data.TryGetProperty("customer_id", out var cid) ? cid.GetString() : null;
+        int amount = data.TryGetProperty("amount", out var a) ? a.GetInt32() : 0;
+        string? currency = data.TryGetProperty("currency", out var c) ? c.GetString() : null;
         
         _logger.LogInformation("Order created - ID: {OrderId}, Customer: {CustomerId}, Amount: {Amount} {Currency}", 
             orderId, customerId, amount, currency);
@@ -177,9 +199,9 @@ public class WebhookController : ControllerBase
 
     private async Task HandleSubscriptionCreated(JsonElement data)
     {
-        var subscriptionId = data.GetProperty("id").GetString();
-        var customerId = data.GetProperty("customer_id").GetString();
-        var productId = data.GetProperty("product_id").GetString();
+        string? subscriptionId = data.TryGetProperty("id", out var id) ? id.GetString() : null;
+        string? customerId = data.TryGetProperty("customer_id", out var cid) ? cid.GetString() : null;
+        string? productId = data.TryGetProperty("product_id", out var pid) ? pid.GetString() : null;
         
         _logger.LogInformation("Subscription created - ID: {SubscriptionId}, Customer: {CustomerId}, Product: {ProductId}", 
             subscriptionId, customerId, productId);
@@ -190,8 +212,8 @@ public class WebhookController : ControllerBase
 
     private async Task HandleSubscriptionUpdated(JsonElement data)
     {
-        var subscriptionId = data.GetProperty("id").GetString();
-        var status = data.GetProperty("status").GetString();
+        string? subscriptionId = data.TryGetProperty("id", out var id) ? id.GetString() : null;
+        string? status = data.TryGetProperty("status", out var s) ? s.GetString() : null;
         
         _logger.LogInformation("Subscription updated - ID: {SubscriptionId}, Status: {Status}", 
             subscriptionId, status);
@@ -202,7 +224,7 @@ public class WebhookController : ControllerBase
 
     private async Task HandleSubscriptionCanceled(JsonElement data)
     {
-        var subscriptionId = data.GetProperty("id").GetString();
+        string? subscriptionId = data.TryGetProperty("id", out var id) ? id.GetString() : null;
         
         _logger.LogInformation("Subscription canceled - ID: {SubscriptionId}", subscriptionId);
         
@@ -212,8 +234,8 @@ public class WebhookController : ControllerBase
 
     private async Task HandleCustomerCreated(JsonElement data)
     {
-        var customerId = data.GetProperty("id").GetString();
-        var email = data.GetProperty("email").GetString();
+        string? customerId = data.TryGetProperty("id", out var id) ? id.GetString() : null;
+        string? email = data.TryGetProperty("email", out var e) ? e.GetString() : null;
         
         _logger.LogInformation("Customer created - ID: {CustomerId}, Email: {Email}", 
             customerId, email);
@@ -224,7 +246,7 @@ public class WebhookController : ControllerBase
 
     private async Task HandleCustomerUpdated(JsonElement data)
     {
-        var customerId = data.GetProperty("id").GetString();
+        string? customerId = data.TryGetProperty("id", out var id) ? id.GetString() : null;
         
         _logger.LogInformation("Customer updated - ID: {CustomerId}", customerId);
         
@@ -232,19 +254,14 @@ public class WebhookController : ControllerBase
         await Task.CompletedTask;
     }
 
-    private async Task ProcessSuccessfulPayment(string checkoutId, JsonElement checkoutData)
+    private async Task ProcessSuccessfulPayment(string checkoutId, dynamic checkoutData)
     {
         try
         {
             // Extract relevant information from the checkout data
-            var customerId = checkoutData.TryGetProperty("customer_id", out var customerIdProp) 
-                ? customerIdProp.GetString() : null;
-            
-            var customerEmail = checkoutData.TryGetProperty("customer_email", out var emailProp) 
-                ? emailProp.GetString() : null;
-            
-            var productId = checkoutData.TryGetProperty("product_id", out var productIdProp) 
-                ? productIdProp.GetString() : null;
+            string? customerId = checkoutData.customer_id;
+            string? customerEmail = checkoutData.customer_email;
+            string? productId = checkoutData.product_id;
 
             _logger.LogInformation("Processing successful payment - Checkout: {CheckoutId}, Customer: {CustomerId}, Email: {Email}, Product: {ProductId}",
                 checkoutId, customerId, customerEmail, productId);

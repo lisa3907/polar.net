@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Polar.Models;
+using PolarNet.Models;
 using Polar.Services;
 
 namespace Polar.Controllers;
@@ -51,7 +51,7 @@ public class PolarController : ControllerBase
     }
 
     [HttpPost("checkout")]
-    public async Task<IActionResult> CreateCheckout([FromBody] CheckoutRequest request)
+    public async Task<IActionResult> CreateCheckout([FromBody] CreateCheckoutRequest request)
     {
         try
         {
@@ -93,10 +93,10 @@ public class PolarController : ControllerBase
             {
                 checkoutId = checkout.Id,
                 status = checkout.Status,
-                customerEmail = checkout.CustomerEmail,
-                customerName = checkout.CustomerName,
-                createdAt = checkout.CreatedAt,
-                expiresAt = checkout.ExpiresAt
+                url = checkout.Url,
+                customerId = checkout.CustomerId,
+                productId = checkout.ProductId,
+                priceId = checkout.ProductPriceId
             });
         }
         catch (Exception ex)

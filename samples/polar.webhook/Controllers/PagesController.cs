@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Polar.Services;
+using PolarNet.Models;
 
 namespace Polar.Controllers;
 
@@ -49,9 +50,6 @@ public class PagesController : Controller
                 if (checkout != null)
                 {
                     ViewBag.CheckoutStatus = checkout.Status;
-                    ViewBag.CustomerEmail = checkout.CustomerEmail;
-                    ViewBag.CustomerName = checkout.CustomerName;
-
                     _logger.LogInformation("Payment success page loaded for checkout {CheckoutId} with status {Status}",
                         checkout_id, checkout.Status);
                 }
@@ -82,8 +80,8 @@ public class PagesController : Controller
             
             ViewBag.Customers = customers.Items;
             ViewBag.Subscriptions = subscriptions.Items;
-            ViewBag.CustomerCount = customers.TotalCount;
-            ViewBag.SubscriptionCount = subscriptions.TotalCount;
+            ViewBag.CustomerCount = customers.Pagination?.TotalCount ?? customers.Items.Count;
+            ViewBag.SubscriptionCount = subscriptions.Pagination?.TotalCount ?? subscriptions.Items.Count;
             
             return View();
         }

@@ -1,4 +1,5 @@
 using Polar.Services;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +43,13 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// Enable raw body buffering for signature verification
+app.Use(async (context, next) =>
+{
+    context.Request.EnableBuffering();
+    await next();
+});
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
@@ -53,25 +61,15 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Pages}/{action=Index}/{id?}");
 
-// Display startup information
+// Display startup information to mirror the debugging doc
 app.Lifetime.ApplicationStarted.Register(() =>
 {
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
     var config = app.Services.GetRequiredService<IConfiguration>();
-    var useSandbox = config.GetValue<bool>("PolarSettings:UseSandbox", true);
-    
-    logger.LogInformation("🎯 Polar Payment Test Application Started");
-    logger.LogInformation("Environment: {Environment}", useSandbox ? "Sandbox" : "Production");
-    logger.LogInformation("Navigate to: https://localhost:7123/polar");
-    logger.LogInformation("API Documentation: https://localhost:7123/swagger");
-    logger.LogInformation("Admin Dashboard: https://localhost:7123/polar/admin");
-    logger.LogInformation("Webhook Endpoint: https://localhost:7123/api/webhook/polar");
-    
-    if (config["PolarSettings:AccessToken"] == "polar_oat_your_sandbox_token_here")
-    {
-        logger.LogWarning("⚠️  Please update your Polar Access Token in appsettings.json");
-        logger.LogWarning("   Get your sandbox token from: https://sandbox.polar.sh/settings");
-    }
+    var urls = config["ASPNETCORE_URLS"] ?? "http://localhost:5000";
+    logger.LogInformation("🚀 Webhook Server started at: {Urls}", urls);
+    logger.LogInformation("📌 Webhook endpoint: {Endpoint}", $"{urls}/api/webhook/polar");
+    logger.LogInformation("💡 ngrok 실행: ngrok http 5000");
 });
 
 app.Run();

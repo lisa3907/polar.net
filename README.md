@@ -5,58 +5,68 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 [![Downloads](https://img.shields.io/nuget/dt/Polar.Net.svg)](https://www.nuget.org/packages/Polar.Net/)
 
-A C# console application to test Polar.sh payment platform Sandbox API.
+Thin C# client library for Polar API with samples (console + ASP.NET webhook).
 
 ## Project structure
 
 ```
 polar.net/
-├── src/
-│   ├── Models/
-│   │   └── PolarModels.cs
-│   ├── Services/
-│   │   └── PolarSandboxAPI.cs
-│   ├── Program.cs
-│   ├── appsettings.json
+├── src/                      # Class library (packable)
+│   ├── Models/               # Typed API models (split per class)
+│   ├── Services/             # Low-level HTTP service
+│   ├── PolarClient.cs        # Public client facade
+│   ├── PolarClientOptions.cs # Client options
 │   └── polar.net.csproj
+├── samples/
+│   ├── polar.sample/         # Console app demonstrating API calls
+│   └── polar.webhook/        # ASP.NET webhook receiver sample
+├── tests/                    # xUnit tests
 └── README.md
 ```
 
-## Setup
+## Quick start
 
-### 1) Restore
+1) Clone & restore
 
-```bash
+```powershell
 git clone https://github.com/lisa3907/polar.net.git
-cd polar.net\src
+cd polar.net
 dotnet restore
 ```
 
-### 2) Configure settings
+2) Build the solution
 
-Edit `src/appsettings.json` and set:
+```powershell
+dotnet build -c Debug
+```
 
-- AccessToken: Access token generated in Polar Sandbox
-- OrganizationId: Your organization ID
-- ProductId: A product ID to test with
-- PriceId: A price ID (e.g., a free recurring price)
+3) Run the console sample (dotnet run uses the sample project)
 
-### 3) Run
-
-```bash
-cd src
+```powershell
+cd samples/polar.sample
 dotnet run
 ```
 
-## Features
+Notes:
+- The console sample makes real calls against the Polar Sandbox API. Open `samples/polar.sample/Program.cs` and provide your Sandbox token (or adapt it to read an environment variable) before running.
+- The ASP.NET webhook sample can be started from `samples/polar.webhook` with `dotnet run`.
 
-1. View organization info
-2. View product info (including prices)
-3. Manage customers (create and list)
-4. Manage subscriptions (create, list, cancel)
-5. Create checkout session
-6. Summary of all data (counts)
-7. Automated test flow
+## Using the library (programmatic)
+
+Add a project reference to `src/polar.net.csproj` (already wired for samples), then:
+
+```csharp
+var client = new PolarNet.PolarClient(new PolarNet.PolarClientOptions
+{
+	AccessToken = "<SANDBOX_OAT>",
+	BaseUrl = "https://sandbox-api.polar.sh",
+	OrganizationId = "<ORG_ID>",
+	DefaultProductId = "<PRODUCT_ID>",
+	DefaultPriceId = "<PRICE_ID>"
+});
+
+var org = await client.GetOrganizationAsync();
+```
 
 ## API endpoints
 
@@ -78,17 +88,9 @@ Stripe test cards useful in Sandbox when testing paid products:
 
 ## Troubleshooting
 
-### 401 Unauthorized
-- Verify token is correct
-- Ensure it’s a Sandbox token
-
-### 404 Not Found
-- Verify IDs
-- Ensure data exists in Sandbox environment
-
-### 422 Unprocessable Entity
-- Verify request payload shape
-- Check required fields are present
+- 401 Unauthorized: Verify the token is sandbox, valid scopes, and not expired.
+- 404 Not Found: Verify IDs exist in your sandbox.
+- 422 Unprocessable Entity: Check request payload and required fields.
 
 ## License
 
@@ -100,3 +102,24 @@ MIT License
 - Polar Sandbox: https://sandbox.polar.sh
 - Polar API Reference: https://docs.polar.sh/api-reference
 - Polar: https://polar.sh
+
+
+## 👥 Team
+
+### **Core Development Team**
+- **SEONGAHN** - Lead Developer & Project Architect ([lisa@odinsoft.co.kr](mailto:lisa@odinsoft.co.kr))
+- **YUJIN** - Senior Developer & Exchange Integration Specialist ([yoojin@odinsoft.co.kr](mailto:yoojin@odinsoft.co.kr))
+- **SEJIN** - Software Developer & API Implementation ([saejin@odinsoft.co.kr](mailto:saejin@odinsoft.co.kr))
+
+## 📞 Support & Contact
+
+- **🐛 Issues**: [GitHub Issues](https://github.com/lisa3907/polar.net/issues)
+- **📧 Email**: help@odinsoft.co.kr
+
+## 📄 License
+
+MIT License - see [LICENSE.md](LICENSE.md) for details.
+
+---
+
+**Built with ❤️ by the ODINSOFT Team** | [⭐ Star us on GitHub](https://github.com/lisa3907/polar.net)

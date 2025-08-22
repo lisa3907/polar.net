@@ -1,43 +1,46 @@
-using Newtonsoft.Json;
 using System;
+using System.Text.Json.Serialization;
 
 namespace PolarNet.Models
 {
     /// <summary>
     /// Represents a finalized order in Polar.
     /// </summary>
+    /// <remarks>
+    /// Orders are created when a purchase completes and may link to a subscription.
+    /// </remarks>
     public class PolarOrder
     {
         /// <summary>Order identifier.</summary>
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; } = string.Empty;
 
         /// <summary>Customer identifier for the order.</summary>
-        [JsonProperty("customer_id")]
+        [JsonPropertyName("customer_id")]
         public string CustomerId { get; set; } = string.Empty;
 
         /// <summary>Product identifier.</summary>
-        [JsonProperty("product_id")]
+        [JsonPropertyName("product_id")]
         public string ProductId { get; set; } = string.Empty;
 
         /// <summary>Price identifier used.</summary>
-        [JsonProperty("product_price_id")]
+        [JsonPropertyName("product_price_id")]
         public string ProductPriceId { get; set; } = string.Empty;
 
         /// <summary>Related subscription identifier, if any.</summary>
-        [JsonProperty("subscription_id")]
+        [JsonPropertyName("subscription_id")]
         public string SubscriptionId { get; set; } = string.Empty;
 
         /// <summary>Total amount in minor units.</summary>
-        [JsonProperty("amount")]
+        [JsonPropertyName("amount")]
         public int Amount { get; set; }
 
         /// <summary>ISO currency code.</summary>
-        [JsonProperty("currency")]
+        [JsonPropertyName("currency")]
         public string Currency { get; set; } = string.Empty;
 
         /// <summary>Creation timestamp (UTC).</summary>
-        [JsonProperty("created_at")]
+        [JsonPropertyName("created_at")]
         public DateTime CreatedAt { get; set; }
     }
 }

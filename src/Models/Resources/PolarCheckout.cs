@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace PolarNet.Models
 {
@@ -8,39 +8,39 @@ namespace PolarNet.Models
     public class PolarCheckout
     {
         /// <summary>Checkout identifier.</summary>
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; } = string.Empty;
 
         /// <summary>Checkout status.</summary>
-        [JsonProperty("status")]
+        [JsonPropertyName("status")]
         public string Status { get; set; } = string.Empty;
 
         /// <summary>Client secret value for client-side operations.</summary>
-        [JsonProperty("client_secret")]
+        [JsonPropertyName("client_secret")]
         public string ClientSecret { get; set; } = string.Empty;
 
         /// <summary>Hosted checkout URL.</summary>
-        [JsonProperty("url")]
+        [JsonPropertyName("url")]
         public string Url { get; set; } = string.Empty;
 
         /// <summary>Customer identifier (if available).</summary>
-        [JsonProperty("customer_id")]
+        [JsonPropertyName("customer_id")]
         public string CustomerId { get; set; } = string.Empty;
 
         /// <summary>Product identifier.</summary>
-        [JsonProperty("product_id")]
+        [JsonPropertyName("product_id")]
         public string ProductId { get; set; } = string.Empty;
 
         /// <summary>Product price identifier used to create this checkout.</summary>
-        [JsonProperty("product_price_id")]
+        [JsonPropertyName("product_price_id")]
         public string ProductPriceId { get; set; } = string.Empty;
 
         /// <summary>Success redirect URL.</summary>
-        [JsonProperty("success_url")]
+        [JsonPropertyName("success_url")]
         public string SuccessUrl { get; set; } = string.Empty;
 
         /// <summary>Allowed embed origin (if applicable).</summary>
-        [JsonProperty("embed_origin")]
+        [JsonPropertyName("embed_origin")]
         public string EmbedOrigin { get; set; } = string.Empty;
     }
 }

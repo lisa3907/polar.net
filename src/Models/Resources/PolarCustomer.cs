@@ -1,35 +1,38 @@
-using Newtonsoft.Json;
 using System;
+using System.Text.Json.Serialization;
 
 namespace PolarNet.Models
 {
     /// <summary>
     /// Represents a customer in Polar.
     /// </summary>
+    /// <remarks>
+    /// A customer is an end-user who can purchase products, create subscriptions, and receive benefits.
+    /// </remarks>
     public class PolarCustomer
     {
         /// <summary>Unique customer identifier.</summary>
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; } = string.Empty;
 
         /// <summary>Customer email address.</summary>
-        [JsonProperty("email")]
+        [JsonPropertyName("email")]
         public string Email { get; set; } = string.Empty;
 
         /// <summary>Customer name.</summary>
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
 
         /// <summary>Owning organization id.</summary>
-        [JsonProperty("organization_id")]
+        [JsonPropertyName("organization_id")]
         public string OrganizationId { get; set; } = string.Empty;
 
         /// <summary>Creation timestamp (UTC).</summary>
-        [JsonProperty("created_at")]
+        [JsonPropertyName("created_at")]
         public DateTime CreatedAt { get; set; }
 
         /// <summary>Last modification timestamp (UTC).</summary>
-        [JsonProperty("modified_at")]
+        [JsonPropertyName("modified_at")]
         public DateTime ModifiedAt { get; set; }
     }
 }

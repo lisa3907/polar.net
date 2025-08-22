@@ -1,158 +1,72 @@
-﻿using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text.Json;
+﻿using Microsoft.Extensions.Configuration;
+using PolarNet.Services;
 
-// Read access token from environment to avoid hardcoding secrets
-var accessToken = "polar_oat_Rxv1IUDyhgYWNGJ5oKZmMBVluOmAkJRHpSXxb0Ai9x3";
-var userId = "e4231692-a863-4d07-832d-e0a83cc85cbd";
-var baseUrl = "https://sandbox-api.polar.sh/v1"; // per docs: sandbox base URL includes /v1
+// Load configuration from appsettings.json
+var config = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .Build();
 
-using var httpClient = new HttpClient();
+var polar = config.GetSection("PolarSettings");
+var accessToken = polar["AccessToken"] ?? string.Empty;
+var organizationId = polar["OrganizationId"];
+var productId = polar["ProductId"];
+var priceId = polar["PriceId"];
+var useSandbox = string.Equals(polar["UseSandbox"], "true", StringComparison.OrdinalIgnoreCase);
+var baseUrl = useSandbox ? polar["SandboxApiUrl"] : polar["ProductionApiUrl"];
 
-// Validate token presence
 if (string.IsNullOrWhiteSpace(accessToken))
 {
-    Console.WriteLine("POLAR_ACCESS_TOKEN environment variable is not set. Please set your Sandbox OAT.");
-    Console.WriteLine("Docs: https://docs.polar.sh/integrate/authentication");
+    Console.WriteLine("PolarSettings:AccessToken is missing in appsettings.json");
     return;
 }
 
-// Set Authorization/Accept headers (typed)
-httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-httpClient.DefaultRequestHeaders.Accept.Clear();
-httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+var client = new PolarClient(new PolarClientOptions
+{
+    AccessToken = accessToken,
+    BaseUrl = baseUrl ?? "",
+    OrganizationId = organizationId,
+    DefaultProductId = productId,
+    DefaultPriceId = priceId,
+});
 
 try
 {
-    Console.WriteLine("=== Testing Polar API Connection ===");
+    Console.WriteLine("=== Polar Client Demo ===");
     Console.WriteLine($"Base URL: {baseUrl}");
-    Console.WriteLine($"Token preview: {(accessToken.Length >= 12 ? accessToken.Substring(0, 12) : "<short>")}*** (len={accessToken.Length})");
-    Console.WriteLine();
 
-    // 1. Test product list
-    Console.WriteLine("1. Testing /v1/products endpoint...");
-    var productsUrl = $"{baseUrl}/products/{userId}";
-    var response = await httpClient.GetAsync(productsUrl);
-    
-    Console.WriteLine($"   Status: {response.StatusCode}");
-    var content = await response.Content.ReadAsStringAsync();
-    
-    if (!response.IsSuccessStatusCode)
+    // List products
+    var products = await client.ListProductsAsync();
+    Console.WriteLine($"Products: {products.Items.Count}");
+
+    // Get product by id if available
+    if (products.Items.Count > 0)
     {
-        Console.WriteLine($"   Error: {content}");
-        if ((int)response.StatusCode == 401)
-        {
-            Console.WriteLine("   401 Unauthorized detected. Common causes:");
-            Console.WriteLine("   - Token revoked (tokens leaked in code are auto-revoked by Polar)");
-            Console.WriteLine("   - Using production token against sandbox or vice versa");
-            Console.WriteLine("   - Missing scope: products:read");
-            if (response.Headers.WwwAuthenticate is not null)
-            {
-                foreach (var h in response.Headers.WwwAuthenticate)
-                {
-                    Console.WriteLine($"   WWW-Authenticate: {h.Scheme} {h.Parameter}");
-                }
-            }
-        }
-        
-        // 2. Test organizations endpoint (token verification)
-    Console.WriteLine("\n2. Testing /v1/organizations endpoint...");
-        var orgsUrl = $"{baseUrl}/organizations";
-        var orgResponse = await httpClient.GetAsync(orgsUrl);
-        Console.WriteLine($"   Status: {orgResponse.StatusCode}");
-        
-        if (!orgResponse.IsSuccessStatusCode)
-        {
-            var orgContent = await orgResponse.Content.ReadAsStringAsync();
-            Console.WriteLine($"   Error: {orgContent}");
-        }
-        else
-        {
-            var orgContent = await orgResponse.Content.ReadAsStringAsync();
-            var orgJson = JsonDocument.Parse(orgContent);
-            Console.WriteLine($"   Success! Organizations found.");
-            
-            // Extract organization ID
-            if (orgJson.RootElement.TryGetProperty("items", out var items) && items.GetArrayLength() > 0)
-            {
-                var firstOrg = items[0];
-                if (firstOrg.TryGetProperty("id", out var orgId))
-                {
-                    Console.WriteLine($"   Organization ID: {orgId.GetString()}");
-                    
-                    // 3. Use organization_id to list products
-                    Console.WriteLine($"\n3. Testing products with organization_id...");
-                    var productsWithOrgUrl = $"{baseUrl}/products?organization_id={orgId.GetString()}";
-                    var prodOrgResponse = await httpClient.GetAsync(productsWithOrgUrl);
-                    Console.WriteLine($"   Status: {prodOrgResponse.StatusCode}");
-                    
-                    if (prodOrgResponse.IsSuccessStatusCode)
-                    {
-                        var prodContent = await prodOrgResponse.Content.ReadAsStringAsync();
-                        var prodJson = JsonDocument.Parse(prodContent);
-                        if (prodJson.RootElement.TryGetProperty("items", out var prodItems))
-                        {
-                            Console.WriteLine($"   Products found: {prodItems.GetArrayLength()}");
-                            if (prodItems.GetArrayLength() > 0)
-                            {
-                                var firstProd = prodItems[0];
-                                if (firstProd.TryGetProperty("id", out var pid))
-                                {
-                                    var productId = pid.GetString();
-                                    Console.WriteLine($"   Fetching product by id: {productId}");
-                                    var productByIdUrl = $"{baseUrl}/products/{productId}";
-                                    var productByIdResp = await httpClient.GetAsync(productByIdUrl);
-                                    Console.WriteLine($"   /products/{'{'}id{'}'} Status: {productByIdResp.StatusCode}");
-                                    if (!productByIdResp.IsSuccessStatusCode)
-                                    {
-                                        var byIdErr = await productByIdResp.Content.ReadAsStringAsync();
-                                        Console.WriteLine($"   /products/{'{'}id{'}'} Error: {byIdErr}");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        var pid = products.Items[0].Id;
+        var product = await client.GetProductAsync(pid);
+        Console.WriteLine($"First Product: {product.Name} ({product.Id})");
     }
-    else
+
+    // List prices (optionally filtered by product)
+    var prices = await client.ListPricesAsync(productId);
+    Console.WriteLine($"Prices: {prices.Items.Count}");
+    if (prices.Items.Count > 0)
     {
-        Console.WriteLine("   Success!");
-        var json = JsonDocument.Parse(content);
-        if (json.RootElement.TryGetProperty("items", out var items))
-        {
-            Console.WriteLine($"   Products found: {items.GetArrayLength()}");
-            // If we have at least one product, fetch by id to demonstrate /products/{id}
-            if (items.GetArrayLength() > 0)
-            {
-                var first = items[0];
-                if (first.TryGetProperty("id", out var pid))
-                {
-                    var productId = pid.GetString();
-                    Console.WriteLine($"   Fetching product by id: {productId}");
-                    var productByIdUrl = $"{baseUrl}/products/{productId}";
-                    var productByIdResp = await httpClient.GetAsync(productByIdUrl);
-                    Console.WriteLine($"   /products/{'{'}id{'}'} Status: {productByIdResp.StatusCode}");
-                    if (!productByIdResp.IsSuccessStatusCode)
-                    {
-                        var byIdErr = await productByIdResp.Content.ReadAsStringAsync();
-                        Console.WriteLine($"   /products/{'{'}id{'}'} Error: {byIdErr}");
-                    }
-                }
-            }
-        }
+        var firstPriceId = prices.Items[0].Id;
+        var price = await client.GetPriceAsync(firstPriceId);
+        Console.WriteLine($"First Price: {price.Type} {price.PriceAmount} {price.PriceCurrency} (Id={price.Id})");
     }
-    
-    Console.WriteLine("\n=== Test Summary ===");
-    Console.WriteLine("If you see 401 errors:");
-    Console.WriteLine("1. Verify your token is from the SANDBOX environment");
-    Console.WriteLine("2. Check token permissions (needs products:read at minimum)");
-    Console.WriteLine("3. Ensure the token hasn't expired");
-    Console.WriteLine("4. Visit: https://sandbox.polar.sh/settings/tokens");
+
+    // List orders
+    var orders = await client.ListOrdersAsync();
+    Console.WriteLine($"Orders: {orders.Items.Count}");
+    if (orders.Items.Count > 0)
+    {
+        var firstOrderId = orders.Items[0].Id;
+        var order = await client.GetOrderAsync(firstOrderId);
+        Console.WriteLine($"First Order: {order.Id}, Amount: {order.Amount} {order.Currency}");
+    }
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"Exception: {ex.Message}");
-    Console.WriteLine($"Stack: {ex.StackTrace}");
+    Console.WriteLine($"Error: {ex.Message}");
 }

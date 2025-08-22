@@ -1,5 +1,5 @@
 using System;
-using PolarNet;
+using PolarNet.Services;
 using Xunit;
 
 namespace PolarNet.Tests;

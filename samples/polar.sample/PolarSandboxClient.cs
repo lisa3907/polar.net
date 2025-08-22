@@ -2,23 +2,23 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json.Nodes;
 
 public class PolarSandboxClient
 {
     private readonly HttpClient _httpClient;
     private const string SANDBOX_BASE_URL = "https://sandbox-api.polar.sh";
     private readonly string _accessToken;
-    private readonly string _organizationId = "e4231692-a863-4d07-832d-e0a83cc85cbd"; // ODINSOFT
+    private readonly string _organizationId = "<Org-id>";
 
     public PolarSandboxClient(string accessToken)
     {
         _accessToken = accessToken;
         _httpClient = new HttpClient();
         _httpClient.BaseAddress = new Uri(SANDBOX_BASE_URL);
-        _httpClient.DefaultRequestHeaders.Authorization = 
+        _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
         _httpClient.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue("application/json"));
@@ -36,18 +36,20 @@ public class PolarSandboxClient
     {
         var response = await _httpClient.GetAsync($"/v1/products?organization_id={_organizationId}");
         var content = await response.Content.ReadAsStringAsync();
-        
+
         if (response.IsSuccessStatusCode)
         {
             Console.WriteLine("Products found:");
-            var json = JObject.Parse(content);
-            var items = json["items"] as JArray;
-            
+            var json = JsonNode.Parse(content)?.AsObject();
+            var items = json?["items"] as JsonArray;
+
             if (items != null && items.Count > 0)
             {
                 foreach (var item in items)
                 {
-                    Console.WriteLine($"- ID: {item["id"]}, Name: {item["name"]}");
+                    var id = item?["id"]?.ToString();
+                    var name = item?["name"]?.ToString();
+                    Console.WriteLine($"- ID: {id}, Name: {name}");
                 }
             }
             else
@@ -59,7 +61,7 @@ public class PolarSandboxClient
         {
             Console.WriteLine($"Error: {response.StatusCode} - {content}");
         }
-        
+
         return content;
     }
 
@@ -83,25 +85,26 @@ public class PolarSandboxClient
             }
         };
 
-        var json = JsonConvert.SerializeObject(productData);
+        var json = JsonSerializer.Serialize(productData);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         var response = await _httpClient.PostAsync("/v1/products", content);
         var responseContent = await response.Content.ReadAsStringAsync();
-        
+
         if (response.IsSuccessStatusCode)
         {
-            var productObj = JObject.Parse(responseContent);
-            Console.WriteLine($"Product created successfully!");
-            Console.WriteLine($"Product ID: {productObj["id"]}");
-            Console.WriteLine($"Product Name: {productObj["name"]}");
+            var productObj = JsonNode.Parse(responseContent)?.AsObject();
+
+            Console.WriteLine("Product created successfully!");
+            Console.WriteLine($"Product ID: {productObj?["id"]}");
+            Console.WriteLine($"Product Name: {productObj?["name"]}");
         }
         else
         {
             Console.WriteLine($"Error creating product: {response.StatusCode}");
             Console.WriteLine(responseContent);
         }
-        
+
         return responseContent;
     }
 
@@ -110,13 +113,13 @@ public class PolarSandboxClient
     {
         var response = await _httpClient.GetAsync($"/v1/products/{productId}");
         var content = await response.Content.ReadAsStringAsync();
-        
+
         if (!response.IsSuccessStatusCode)
         {
             Console.WriteLine($"Error getting product: {response.StatusCode}");
             Console.WriteLine(content);
         }
-        
+
         return content;
     }
 }

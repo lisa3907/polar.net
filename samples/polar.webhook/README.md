@@ -34,7 +34,7 @@ Edit the `appsettings.json` file:
 ```json
 {
   "Polar": {
-    "AccessToken": "polar_oat_YOUR_SANDBOX_TOKEN_HERE",
+    "AccessToken": "polar_oat_your_sandbox_token_here",
     "WebhookSecret": "whsec_YOUR_WEBHOOK_SECRET_HERE",
     "UseSandbox": true,
     "OrganizationId": "YOUR_ORGANIZATION_ID_HERE"
@@ -125,8 +125,6 @@ tests/polar/
 │   ├── PolarController.cs      # API endpoints
 │   ├── WebhookController.cs    # Webhook handling
 │   └── PagesController.cs      # MVC pages
-├── Models/
-│   └── PolarModels.cs          # Data models
 ├── Services/
 │   └── PolarService.cs         # Polar API integration service
 ├── Views/Pages/
