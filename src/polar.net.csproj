@@ -1,0 +1,77 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+        <!-- Target Framework -->
+		<TargetFrameworks>netstandard2.0;netstandard2.1;net8.0;net9.0</TargetFrameworks>
+		<LangVersion>latest</LangVersion>
+
+		<!-- Assembly Information -->
+		<AssemblyName>Polar.Net</AssemblyName>
+		<RootNamespace>Polar.Net</RootNamespace>
+
+		<!-- Versioning -->
+		<Version>1.0.1</Version>
+		<AssemblyVersion>1.0.1.0</AssemblyVersion>
+		<FileVersion>1.0.1.0</FileVersion>
+
+		<!-- Package Information -->
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<PackageId>Polar.Net</PackageId>
+		<Authors>SEONGAHN LEE</Authors>
+		<Product>Polar.Net</Product>
+		<Company>ODINSOFT</Company>
+		<Title>Polar.Net — Thin client library for Polar API for .NET</Title>
+        <Description>Thin C# client library for Polar API (https://docs.polar.sh/). Supports sandbox and production with simple, typed access.</Description>
+		<Copyright>Copyright OdinSoft Co., Ltd. 2015~2025</Copyright>
+
+		<!-- Package Settings -->
+		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+		<PackageProjectUrl>https://github.com/lisa3907/polar.net</PackageProjectUrl>
+		<PackageIcon>logomark_black.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageTags>polar;payments;subscriptions;api;client</PackageTags>
+		<PackageReleaseNotes>v1.0.1 - </PackageReleaseNotes>
+
+		<!-- Repository Information -->
+		<RepositoryUrl>https://github.com/lisa3907/polar.net</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+		<!-- Code Quality Settings - Simplified -->
+		<Nullable>disable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+		<!-- Suppress most warnings except critical ones -->
+		<NoWarn>$(NoWarn);CS1998;CS0618;CS1591</NoWarn>
+
+		<!-- Build Settings -->
+		<Deterministic>true</Deterministic>
+		<ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+		<Platforms>AnyCPU;x64;x86</Platforms>
+		<ApplicationIcon>logomark_black.ico</ApplicationIcon>
+
+		<!-- Debugging and Symbols -->
+		<DebugType>embedded</DebugType>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+
+	<!-- Package Files -->
+	<ItemGroup>
+		<None Include="..\README.md" Pack="true" PackagePath="\" />
+		<None Include="..\LICENSE.md" Pack="true" PackagePath="\" />
+		<None Include="..\docs\logo-files\logomark_black.png" Pack="true" PackagePath="\" />
+		<Content Include="..\LICENSE.md" Link="LICENSE.md" />
+		<Content Include="logomark_black.ico" />
+	</ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    </ItemGroup>
+
+</Project>

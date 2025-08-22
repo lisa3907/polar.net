@@ -266,6 +266,4 @@ scripts/nuget-config.ps1
 .claude/
 .mcp.json
 ./CLAUD.local.md
-
-# Generated exchange status file
-./docs/EXCHANGE_STATUS.generated.md
+nul

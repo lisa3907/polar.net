@@ -1,0 +1,66 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolarNet.Tests", "tests\PolarNet.Tests\PolarNet.Tests.csproj", "{B0B0B0B0-0000-4000-8000-000000000111}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{C8D5274F-AC00-46C7-1F8D-E88E81087A52}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{783B2153-3524-46C6-9716-A4A688FDE7B7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{96DE8246-CA8F-403C-AD5E-7C753A673B9E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "polar.net", "src\polar.net.csproj", "{925B1409-DD03-7247-2EC6-6067E3E82725}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "polar.webhook", "samples\polar.webhook\polar.webhook.csproj", "{05890A55-071B-FA4D-C39D-C49057FA4E0E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "polar.sample", "samples\polar.sample\polar.sample.csproj", "{D34B4C10-72B6-A0A5-6ACE-AC8A76B9FA5C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2A3A057F-5D22-31FD-628C-DF5EF75AEF1E}"
+	ProjectSection(SolutionItems) = preProject
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		.mcp.json = .mcp.json
+		CLAUDE.local.md = CLAUDE.local.md
+		LICENSE.md = LICENSE.md
+		README.md = README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{925B1409-DD03-7247-2EC6-6067E3E82725}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{925B1409-DD03-7247-2EC6-6067E3E82725}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{925B1409-DD03-7247-2EC6-6067E3E82725}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{925B1409-DD03-7247-2EC6-6067E3E82725}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05890A55-071B-FA4D-C39D-C49057FA4E0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05890A55-071B-FA4D-C39D-C49057FA4E0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05890A55-071B-FA4D-C39D-C49057FA4E0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05890A55-071B-FA4D-C39D-C49057FA4E0E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D34B4C10-72B6-A0A5-6ACE-AC8A76B9FA5C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D34B4C10-72B6-A0A5-6ACE-AC8A76B9FA5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D34B4C10-72B6-A0A5-6ACE-AC8A76B9FA5C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D34B4C10-72B6-A0A5-6ACE-AC8A76B9FA5C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0B0B0B0-0000-4000-8000-000000000111}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0B0B0B0-0000-4000-8000-000000000111}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0B0B0B0-0000-4000-8000-000000000111}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0B0B0B0-0000-4000-8000-000000000111}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{925B1409-DD03-7247-2EC6-6067E3E82725} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{05890A55-071B-FA4D-C39D-C49057FA4E0E} = {96DE8246-CA8F-403C-AD5E-7C753A673B9E}
+		{D34B4C10-72B6-A0A5-6ACE-AC8A76B9FA5C} = {96DE8246-CA8F-403C-AD5E-7C753A673B9E}
+		{B0B0B0B0-0000-4000-8000-000000000111} = {783B2153-3524-46C6-9716-A4A688FDE7B7}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {64FC74B5-0835-440B-B01F-8513F1A66BCA}
+	EndGlobalSection
+EndGlobal
