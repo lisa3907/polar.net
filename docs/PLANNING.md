@@ -1,8 +1,8 @@
-# Polar.NET - C# API Client Library Planning Document
+# PolarNet - C# API Client Library Planning Document
 
 ## Overview
 
-The Polar.NET project aims to create a comprehensive C# client library for the [Polar API](https://docs.polar.sh/api-reference/introduction), providing developers with a robust, type-safe, and intuitive way to integrate Polar's monetization platform into their .NET applications.
+The PolarNet project aims to create a comprehensive C# client library for the [Polar API](https://docs.polar.sh/api-reference/introduction), providing developers with a robust, type-safe, and intuitive way to integrate Polar's monetization platform into their .NET applications.
 
 ## Project Goals
 
@@ -339,7 +339,7 @@ public async Task<IActionResult> HandleWebhook(
 ## Deployment Strategy
 
 ### NuGet Package
-- Package ID: `Polar.NET`
+- Package ID: `PolarNet`
 - Semantic versioning (SemVer)
 - Automated release pipeline
 - Symbol package for debugging
@@ -386,7 +386,7 @@ public async Task<IActionResult> HandleWebhook(
 - **Repository**: https://github.com/lisa3907/polar.net
 - **Issues**: https://github.com/lisa3907/polar.net/issues
 - **Documentation**: https://github.com/lisa3907/polar.net/wiki
-- **NuGet Package**: https://www.nuget.org/packages/Polar.NET
+- **NuGet Package**: https://www.nuget.org/packages/PolarNet
 
 ---
 

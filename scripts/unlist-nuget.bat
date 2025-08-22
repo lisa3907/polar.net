@@ -1,10 +1,10 @@
 @echo off
-REM Polar.Net NuGet Package Unlist Batch File
+REM PolarNet NuGet Package Unlist Batch File
 REM This is a wrapper for the PowerShell unlist script
 
 echo.
 echo =========================================
-echo   Polar.Net NuGet Package Unlist Tool
+echo   PolarNet NuGet Package Unlist Tool
 echo =========================================
 echo.
 

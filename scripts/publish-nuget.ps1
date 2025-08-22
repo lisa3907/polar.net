@@ -1,5 +1,5 @@
-# Polar.Net NuGet Package Publisher
-# This script builds and publishes the Polar.Net package to NuGet.org
+# PolarNet NuGet Package Publisher
+# This script builds and publishes the PolarNet package to NuGet.org
 
 param(
     [Parameter(Mandatory=$false)]
@@ -32,7 +32,7 @@ function Write-Error { param($Message) Write-Host $Message -ForegroundColor Red 
 # Banner
 Write-Host ""
 Write-Info "========================================="
-Write-Info "  Polar.Net NuGet Package Publisher"
+Write-Info "  PolarNet NuGet Package Publisher"
 Write-Info "========================================="
 Write-Host ""
 
@@ -92,7 +92,7 @@ if (-not $SkipBuild) {
 if (-not $SkipTests) {
     Write-Host ""
     Write-Info "Running tests..."
-    $TestPath = Join-Path $RootDir "tests\Polar.Net.Tests.csproj"
+    $TestPath = Join-Path $RootDir "tests\PolarNet.Tests.csproj"
     
     # Build test project first
     $testBuildCommand = "dotnet build `"$TestPath`" --configuration $Configuration"
@@ -199,7 +199,7 @@ if ($DryRun) {
     Write-Success "  Package published successfully!"
     Write-Success "========================================="
     Write-Host ""
-    Write-Info "Package URL: https://www.nuget.org/packages/Polar.Net/"
+    Write-Info "Package URL: https://www.nuget.org/packages/PolarNet/"
     Write-Info "It may take a few minutes for the package to appear on NuGet.org"
 }
 

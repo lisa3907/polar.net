@@ -1,9 +1,9 @@
-# Polar.NET
+# PolarNet
 
-[![NuGet](https://img.shields.io/nuget/v/Polar.Net.svg)](https://www.nuget.org/packages/Polar.Net/)
+[![NuGet](https://img.shields.io/nuget/v/PolarNet.svg)](https://www.nuget.org/packages/PolarNet/)
 [![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%209.0-blue.svg)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
-[![Downloads](https://img.shields.io/nuget/dt/Polar.Net.svg)](https://www.nuget.org/packages/Polar.Net/)
+[![Downloads](https://img.shields.io/nuget/dt/PolarNet.svg)](https://www.nuget.org/packages/PolarNet/)
 
 Thin C# client library for Polar API with samples (console + ASP.NET webhook).
 

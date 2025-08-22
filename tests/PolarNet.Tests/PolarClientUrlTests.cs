@@ -48,14 +48,14 @@ namespace PolarNet.Tests
                 .Build();
             var polar = config.GetSection("PolarSettings");
             var useSandbox = string.Equals(polar["UseSandbox"], "true", StringComparison.OrdinalIgnoreCase);
-            _baseUrl = (useSandbox ? polar["SandboxApiUrl"] : polar["ProductionApiUrl"]) ?? ""; 
+            _baseUrl = (useSandbox ? polar["SandboxApiUrl"] : polar["ProductionApiUrl"]) ?? "";
             _orgId = polar["OrganizationId"] ?? "org_1";
         }
         [Fact]
         public async Task ListProducts_Uses_Organization_Query()
         {
             var handler = new FakeHandler();
-            var client = new PolarClient(new PolarClientOptions{ AccessToken = "x", BaseUrl = _baseUrl, OrganizationId = _orgId }, handler);
+            var client = new PolarClient(new PolarClientOptions { AccessToken = "x", BaseUrl = _baseUrl, OrganizationId = _orgId }, handler);
             await client.ListProductsAsync();
             Assert.Contains($"/v1/products?organization_id={_orgId}", handler.LastRequestUri);
         }
@@ -64,7 +64,7 @@ namespace PolarNet.Tests
         public async Task ListPrices_Adds_Optional_ProductId_Filter()
         {
             var handler = new FakeHandler();
-            var client = new PolarClient(new PolarClientOptions{ AccessToken = "x", BaseUrl = _baseUrl, OrganizationId = _orgId }, handler);
+            var client = new PolarClient(new PolarClientOptions { AccessToken = "x", BaseUrl = _baseUrl, OrganizationId = _orgId }, handler);
             await client.ListPricesAsync("p_1");
             Assert.Contains($"/v1/prices?organization_id={_orgId}&product_id=p_1", handler.LastRequestUri);
         }
@@ -73,7 +73,7 @@ namespace PolarNet.Tests
         public async Task GetCustomerState_Calls_State_Path()
         {
             var handler = new FakeHandler();
-            var client = new PolarClient(new PolarClientOptions{ AccessToken = "x", BaseUrl = _baseUrl }, handler);
+            var client = new PolarClient(new PolarClientOptions { AccessToken = "x", BaseUrl = _baseUrl }, handler);
             await client.GetCustomerStateAsync("c_1");
             Assert.EndsWith("/v1/customers/c_1/state", handler.LastRequestUri);
         }
@@ -81,7 +81,7 @@ namespace PolarNet.Tests
         [Fact]
         public async Task CreateSubscription_Throws_When_No_PriceId()
         {
-            var client = new PolarClient(new PolarClientOptions{ AccessToken = "x", BaseUrl = _baseUrl });
+            var client = new PolarClient(new PolarClientOptions { AccessToken = "x", BaseUrl = _baseUrl });
             await Assert.ThrowsAsync<ArgumentException>(() => client.CreateSubscriptionAsync("c_1"));
         }
     }

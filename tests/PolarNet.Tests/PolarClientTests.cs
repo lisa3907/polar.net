@@ -2,13 +2,14 @@ using System;
 using PolarNet.Services;
 using Xunit;
 
-namespace PolarNet.Tests;
-
-public class PolarClientTests
+namespace PolarNet.Tests
 {
-    [Fact]
-    public void Ctor_Throws_When_AccessToken_Missing()
+    public class PolarClientTests
     {
-    Assert.Throws<ArgumentException>(() => new PolarClient(new PolarClientOptions{ AccessToken = "" }));
+        [Fact]
+        public void Ctor_Throws_When_AccessToken_Missing()
+        {
+            Assert.Throws<ArgumentException>(() => new PolarClient(new PolarClientOptions { AccessToken = "" }));
+        }
     }
 }

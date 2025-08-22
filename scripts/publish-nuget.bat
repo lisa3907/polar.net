@@ -1,10 +1,10 @@
 @echo off
-REM Polar.Net NuGet Package Publisher Batch File
+REM PolarNet NuGet Package Publisher Batch File
 REM This is a wrapper for the PowerShell script
 
 echo.
 echo =========================================
-echo   Polar.Net NuGet Package Publisher
+echo   PolarNet NuGet Package Publisher
 echo =========================================
 echo.
 

@@ -1,4 +1,4 @@
-# Polar.NET Webhook Integration Guide
+# PolarNet Webhook Integration Guide
 
 ## Quick Start - Webhook Debugging in Visual Studio 2022
 
