@@ -1,0 +1,331 @@
+@{
+    ViewData["Title"] = "Polar Admin Dashboard";
+}
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f5f7;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.875rem;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .error-message {
+            background: #fee;
+            color: #c00;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #f8f9fa;
+            color: #666;
+            font-weight: 600;
+            text-align: left;
+            padding: 12px;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+        }
+        
+        td {
+            padding: 12px;
+            border-top: 1px solid #f0f0f0;
+            color: #333;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-trialing {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
+        .status-past_due {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .navigation {
+            margin-top: 20px;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+        }
+        
+        .nav-link:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>🎯 Polar Admin Dashboard</h1>
+            <p class="subtitle">Sandbox Environment - Payment Management System</p>
+            <div class="navigation">
+                <div class="nav-links">
+                    <a href="/polar" class="nav-link">← Back to Products</a>
+                    <a href="/api/polar/products" class="nav-link" target="_blank">API: Products</a>
+                    <a href="/api/polar/customers" class="nav-link" target="_blank">API: Customers</a>
+                    <a href="/api/polar/subscriptions" class="nav-link" target="_blank">API: Subscriptions</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        @if (ViewBag.Error != null)
+        {
+            <div class="error-message">
+                @ViewBag.Error
+            </div>
+        }
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Customers</div>
+                <div class="stat-value">@(ViewBag.CustomerCount ?? 0)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Subscriptions</div>
+                <div class="stat-value">@(ViewBag.SubscriptionCount ?? 0)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Environment</div>
+                <div class="stat-value" style="font-size: 1.5rem;">Sandbox</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">👥 Recent Customers</h2>
+            @if (ViewBag.Customers != null && ViewBag.Customers.Count > 0)
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Name</th>
+                            <th>External ID</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var customer in ViewBag.Customers)
+                        {
+                            <tr>
+                                <td>@customer.Email</td>
+                                <td>@(customer.Name ?? "-")</td>
+                                <td style="font-size: 0.875rem; color: #666;">
+                                    @(customer.ExternalCustomerId ?? "-")
+                                </td>
+                                <td>@customer.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="empty-state">
+                    No customers yet. Complete a test purchase to see customer data.
+                </div>
+            }
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">📊 Active Subscriptions</h2>
+            @if (ViewBag.Subscriptions != null && ViewBag.Subscriptions.Count > 0)
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Subscription ID</th>
+                            <th>Status</th>
+                            <th>Customer</th>
+                            <th>Product</th>
+                            <th>Started At</th>
+                            <th>Current Period End</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var subscription in ViewBag.Subscriptions)
+                        {
+                            <tr>
+                                <td style="font-size: 0.75rem;">@subscription.Id</td>
+                                <td>
+                                    <span class="status-badge status-@subscription.Status.ToLower()">
+                                        @subscription.Status
+                                    </span>
+                                </td>
+                                <td style="font-size: 0.875rem;">@subscription.CustomerId</td>
+                                <td style="font-size: 0.875rem;">@subscription.ProductId</td>
+                                <td>@subscription.StartedAt.ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    @if (subscription.CurrentPeriodEnd != null)
+                                    {
+                                        @subscription.CurrentPeriodEnd.Value.ToString("yyyy-MM-dd")
+                                    }
+                                    else
+                                    {
+                                        <span>-</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="empty-state">
+                    No active subscriptions. Create a subscription product and complete a test purchase to see subscription data.
+                </div>
+            }
+        </div>
+        
+        <div class="section" style="text-align: center;">
+            <a href="/polar" class="btn btn-primary">Test New Purchase</a>
+        </div>
+    </div>
+</body>
+</html>

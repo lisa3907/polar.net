@@ -1,0 +1,287 @@
+@{
+    ViewData["Title"] = "Payment Success";
+}
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .success-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: scaleIn 0.5s ease-out;
+        }
+        
+        @@keyframes scaleIn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .checkmark {
+            color: white;
+            font-size: 48px;
+            animation: fadeIn 0.5s ease-out 0.3s forwards;
+            opacity: 0;
+        }
+        
+        @@keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+        
+        h1 {
+            color: #22c55e;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+        
+        .message {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .details {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .detail-row:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            color: #999;
+            font-size: 0.875rem;
+        }
+        
+        .detail-value {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .status-succeeded {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-confirmed {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-pending {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @@keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <div class="success-icon">
+            <span class="checkmark">✓</span>
+        </div>
+        
+        <h1>Payment Successful!</h1>
+        <p class="message">
+            Your payment has been processed successfully. Thank you for your purchase!
+        </p>
+        
+        @if (ViewBag.CheckoutId != null)
+        {
+            <div class="details">
+                <div class="detail-row">
+                    <span class="detail-label">Checkout ID</span>
+                    <span class="detail-value" style="font-size: 0.75rem;">@ViewBag.CheckoutId</span>
+                </div>
+                
+                @if (ViewBag.CheckoutStatus != null)
+                {
+                    <div class="detail-row">
+                        <span class="detail-label">Status</span>
+                        <span class="detail-value">
+                            <span class="status-badge status-@ViewBag.CheckoutStatus.ToLower()">
+                                @ViewBag.CheckoutStatus
+                            </span>
+                        </span>
+                    </div>
+                }
+                
+                @if (ViewBag.CustomerEmail != null)
+                {
+                    <div class="detail-row">
+                        <span class="detail-label">Email</span>
+                        <span class="detail-value">@ViewBag.CustomerEmail</span>
+                    </div>
+                }
+                
+                @if (ViewBag.CustomerName != null)
+                {
+                    <div class="detail-row">
+                        <span class="detail-label">Customer</span>
+                        <span class="detail-value">@ViewBag.CustomerName</span>
+                    </div>
+                }
+            </div>
+            
+            <div id="statusCheck" style="display: none; margin-bottom: 20px;">
+                <span class="loading"></span>
+                <p style="color: #666; margin-top: 10px;">Verifying payment status...</p>
+            </div>
+        }
+        
+        <div class="button-group">
+            <a href="/polar" class="btn btn-primary">Back to Products</a>
+            <a href="/polar/admin" class="btn btn-secondary">View Admin</a>
+        </div>
+    </div>
+    
+    @if (ViewBag.CheckoutId != null && ViewBag.CheckoutStatus == "confirmed")
+    {
+        <script>
+            // Poll for payment confirmation if status is "confirmed"
+            let pollCount = 0;
+            const maxPolls = 30; // Poll for up to 30 seconds
+            
+            async function checkPaymentStatus() {
+                const statusDiv = document.getElementById('statusCheck');
+                statusDiv.style.display = 'block';
+                
+                try {
+                    const response = await fetch('/api/polar/checkout/@ViewBag.CheckoutId');
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data.status === 'succeeded') {
+                            // Payment confirmed!
+                            location.reload();
+                        } else if (pollCount < maxPolls) {
+                            pollCount++;
+                            setTimeout(checkPaymentStatus, 1000); // Check again in 1 second
+                        } else {
+                            statusDiv.innerHTML = '<p style="color: #666;">Payment is being processed. Please check back later.</p>';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking payment status:', error);
+                    statusDiv.style.display = 'none';
+                }
+            }
+            
+            // Start polling after page load
+            setTimeout(checkPaymentStatus, 2000);
+        </script>
+    }
+</body>
+</html>
