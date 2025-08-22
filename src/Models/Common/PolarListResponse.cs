@@ -15,7 +15,7 @@ namespace PolarNet.Models
         [JsonPropertyName("items")]
         public List<T> Items { get; set; } = new();
 
-        /// <summary>Pagination metadata.</summary>
+        /// <summary>Pagination metadata for the entire collection.</summary>
         [JsonPropertyName("pagination")]
         public PolarPagination Pagination { get; set; } = new();
     }

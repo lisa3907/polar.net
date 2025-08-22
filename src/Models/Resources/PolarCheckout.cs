@@ -5,6 +5,11 @@ namespace PolarNet.Models
     /// <summary>
     /// Represents a checkout session created in Polar.
     /// </summary>
+    /// <remarks>
+    /// Returned from checkout creation endpoints and retrieval calls. The <see cref="Url"/>
+    /// points to a hosted page; <see cref="ClientSecret"/> may be used by client-side SDKs
+    /// where applicable.
+    /// </remarks>
     public class PolarCheckout
     {
         /// <summary>Checkout identifier.</summary>

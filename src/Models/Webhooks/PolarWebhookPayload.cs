@@ -9,6 +9,9 @@ namespace PolarNet.Models
     /// </summary>
     /// <remarks>
     /// The <see cref="Data"/> property contains the event-specific payload as a JsonElement.
+    /// Use <see cref="Type"/> to select the correct event DTO (e.g., SubscriptionCreatedEvent)
+    /// and deserialize <see cref="Data"/> accordingly. Signature verification should be
+    /// performed at the HTTP layer before trusting this payload.
     /// </remarks>
     public class PolarWebhookPayload
     {

@@ -5,6 +5,11 @@ namespace PolarNet.Models
     /// <summary>
     /// Represents a price (one-time or recurring) for a product.
     /// </summary>
+    /// <remarks>
+    /// A price belongs to a product and can be one-time or recurring. For recurring prices,
+    /// <c>recurring_interval</c> indicates the billing cadence. When <c>price_amount</c> is set,
+    /// it's expressed in minor currency units (e.g., cents).
+    /// </remarks>
     public class PolarPrice
     {
         /// <summary>Unique price identifier.</summary>
