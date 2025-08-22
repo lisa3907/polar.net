@@ -10,7 +10,7 @@ The PolarNet project aims to create a comprehensive C# client library for the [P
 - Create a production-ready NuGet package for Polar API integration
 - Implement full API coverage with strong typing and IntelliSense support
 - Provide comprehensive documentation and examples
-- Ensure cross-platform compatibility (.NET 6.0+)
+- Ensure cross-platform compatibility (netstandard2.0+, .NET 8/9)
 - Maintain high code quality with extensive unit testing
 
 ### Secondary Objectives
@@ -48,7 +48,7 @@ src/
 │   ├── PolarException.cs     # Base exception class
 │   └── PolarApiException.cs  # API-specific exceptions
 └── Extensions/
-    └── ServiceCollectionExtensions.cs # DI extensions
+    └── ServiceCollectionExtensions.cs # DI extensions (future)
 ```
 
 ### Key Features Implementation
@@ -60,7 +60,7 @@ src/
 - API key validation
 
 #### 2. HTTP Client Management
-- HttpClient factory pattern for proper lifecycle management
+- Simple HttpClient usage within PolarClient; factory integration can be added later
 - Configurable timeout and retry policies
 - Request/response logging capabilities
 - Custom headers support
@@ -91,7 +91,7 @@ Demonstrates basic API operations:
 ### ASP.NET Core Web Application (`polar.webhook`)
 Showcases webhook integration:
 - Webhook endpoint setup
-- Signature verification
+- Signature verification (planned; stubbed in controller with TODO)
 - Event processing pipeline
 - Event logging and monitoring
 - Error handling and retry logic
@@ -115,7 +115,7 @@ Showcases webhook integration:
 
 ### Test Infrastructure
 - XUnit test framework
-- Moq for mocking dependencies
+- Moq (optional) for mocking dependencies; tests currently use a custom HttpMessageHandler
 - FluentAssertions for readable assertions
 - Test fixtures for shared setup
 - In-memory test server for webhook testing
@@ -159,102 +159,105 @@ Showcases webhook integration:
 ## Technical Requirements
 
 ### Target Frameworks
-- .NET 6.0 (LTS)
-- .NET 7.0
-- .NET 8.0 (Latest LTS)
+- netstandard2.0
+- netstandard2.1
+- .NET 8.0
+- .NET 9.0
 
-### Dependencies
-- System.Text.Json (>= 8.0.0)
-- Microsoft.Extensions.Http (>= 8.0.0)
-- Microsoft.Extensions.DependencyInjection.Abstractions (>= 8.0.0)
-- Microsoft.Extensions.Options (>= 8.0.0)
+### Dependencies (library)
+- System.Net.Http (4.3.4)
+- Microsoft.Extensions.Configuration (8.0.0)
+- Microsoft.Extensions.Configuration.Json (8.0.0)
+- System.Text.Json (inbox for .NET 8/9; available in runtime)
 
 ### Development Dependencies
-- XUnit (>= 2.6.0)
-- Moq (>= 4.20.0)
-- FluentAssertions (>= 6.12.0)
-- Microsoft.AspNetCore.Mvc.Testing (>= 8.0.0)
+- xUnit
+- (Optional) Moq / FluentAssertions
 
-## API Coverage Checklist
+## API Coverage Checklist (current)
 
 ### Organizations
-- [x] List organizations
+- [ ] List organizations
 - [x] Get organization
-- [x] Update organization
+- [ ] Update organization
 
 ### Products
 - [x] List products
-- [x] Create product
+- [ ] Create product
 - [x] Get product
-- [x] Update product
-- [x] Archive product
+- [ ] Update product
+- [ ] Archive product
 
 ### Prices
 - [x] List prices
-- [x] Create price
+- [ ] Create price
 - [x] Get price
-- [x] Update price
+- [ ] Update price
 
 ### Benefits
 - [x] List benefits
-- [x] Create benefit
-- [x] Get benefit
-- [x] Update benefit
-- [x] Delete benefit
-- [x] Grant benefit
+- [ ] Create benefit
+- [ ] Get benefit
+- [ ] Update benefit
+- [ ] Delete benefit
+- [ ] Grant benefit
 
 ### Customers
 - [x] List customers
 - [x] Create customer
 - [x] Get customer
-- [x] Update customer
-- [x] Delete customer
+- [ ] Update customer
+- [ ] Delete customer
+- [x] Get customer state
 
 ### Orders
 - [x] List orders
 - [x] Get order
-- [x] Get order invoice
+- [ ] Get order invoice
 
 ### Subscriptions
 - [x] List subscriptions
 - [x] Create subscription
 - [x] Get subscription
-- [x] Update subscription
+- [ ] Update subscription
 - [x] Cancel subscription
 
-### Checkouts
+### Checkouts (custom)
 - [x] Create checkout session
 - [x] Get checkout
-- [x] Update checkout
-- [x] Confirm checkout
+- [ ] Update checkout
+- [ ] Confirm checkout
 
 ### Webhooks
 - [x] Event parsing
-- [x] Signature verification
+- [ ] Signature verification
 - [x] Event type mapping
-- [x] Retry handling
+- [ ] Retry handling
 
 ## Configuration Example
 
 ```csharp
-// appsettings.json
+// appsettings.json used by samples/tests
 {
-  "Polar": {
-    "ApiKey": "YOUR_API_KEY",
-    "Environment": "Sandbox", // or "Production"
-    "BaseUrl": "https://sandbox.polar.sh/api/v1",
-    "Timeout": 30,
-    "MaxRetryAttempts": 3,
-    "EnableLogging": true
-  }
+    "PolarSettings": {
+        "UseSandbox": true,
+        "SandboxApiUrl": "https://sandbox-api.polar.sh",
+        "ProductionApiUrl": "https://api.polar.sh",
+        "AccessToken": "<SANDBOX_OAT>",
+        "OrganizationId": "<ORG_ID>",
+        "ProductId": "<PRODUCT_ID>",
+        "PriceId": "<PRICE_ID>"
+    }
 }
 
-// Program.cs
-builder.Services.AddPolar(options =>
+// Creating a client
+var client = new PolarClient(new PolarClientOptions
 {
-    options.ApiKey = configuration["Polar:ApiKey"];
-    options.Environment = PolarEnvironment.Sandbox;
-    options.Timeout = TimeSpan.FromSeconds(30);
+        AccessToken = accessToken,
+        BaseUrl = baseUrl, // e.g., https://sandbox-api.polar.sh
+        OrganizationId = organizationId,
+        DefaultProductId = productId,
+        DefaultPriceId = priceId
 });
 ```
 
@@ -288,26 +291,29 @@ var checkout = await client.Checkouts.CreateAsync(new CreateCheckoutRequest
 });
 ```
 
-### Webhook Handling
+### Webhook Handling (sample controller excerpt)
 ```csharp
 [HttpPost("webhook")]
-public async Task<IActionResult> HandleWebhook(
-    [FromBody] JsonElement payload,
-    [FromHeader(Name = "Polar-Webhook-Signature")] string signature)
+public async Task<IActionResult> HandleWebhook()
 {
-    var isValid = _polarClient.Webhooks.VerifySignature(payload, signature);
-    if (!isValid)
-        return Unauthorized();
+    // Read headers typically sent by Polar
+    var signature = Request.Headers["Polar-Webhook-Signature"].FirstOrDefault();
+    var eventType = Request.Headers["Polar-Event-Type"].FirstOrDefault();
+    var eventId = Request.Headers["Polar-Event-Id"].FirstOrDefault();
 
-    var webhookEvent = _polarClient.Webhooks.ParseEvent(payload);
-    
-    switch (webhookEvent.Type)
+    // TODO: Verify signature when WebhookSecret is configured
+
+    using var reader = new StreamReader(Request.Body);
+    var body = await reader.ReadToEndAsync();
+    var payload = JsonSerializer.Deserialize<PolarWebhookPayload>(body);
+
+    switch (payload?.Type)
     {
         case "customer.created":
-            await HandleCustomerCreated(webhookEvent.Data);
+            await HandleCustomerCreated(payload.Data);
             break;
         case "subscription.created":
-            await HandleSubscriptionCreated(webhookEvent.Data);
+            await HandleSubscriptionCreated(payload.Data);
             break;
         // ... handle other events
     }
@@ -390,5 +396,5 @@ public async Task<IActionResult> HandleWebhook(
 
 ---
 
-*Last Updated: 2025-08-22*
+*Last Updated: 2025-08-23*
 *Version: 1.0.0*

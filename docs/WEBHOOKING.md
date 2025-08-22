@@ -15,15 +15,10 @@ Before starting, ensure you have the following installed:
 
 ## Project Setup
 
-### Step 1: Create the Webhook Project
+### Step 1: Use the included sample project
 
-```powershell
-# Run PowerShell as Administrator
-cd polar.net
-mkdir samples\polar.webhook
-cd samples\polar.webhook
-dotnet new webapi -n PolarWebhook
-```
+This repo already contains `samples/polar.webhook` with controllers and services.
+Open the solution (`polar.net.sln`) or folder in Visual Studio.
 
 ### Step 2: Open in Visual Studio 2022
 
@@ -31,22 +26,35 @@ There are two ways to open the project:
 1. Double-click the `PolarWebhook.csproj` file
 2. In Visual Studio: **File → Open → Project/Solution**
 
-### Step 3: Install Required Packages
+### Step 3: Configure settings
 
-```xml
-<!-- Add to PolarWebhook.csproj -->
-<ItemGroup>
-  <PackageReference Include="System.Text.Json" Version="8.0.0" />
-  <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
-  <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-</ItemGroup>
+Create or edit `samples/polar.webhook/appsettings.json`:
+
+```json
+{
+    "Logging": {
+        "LogLevel": {
+            "Default": "Information",
+            "Microsoft.AspNetCore": "Warning"
+        }
+    },
+    "PolarSettings": {
+        "WebhookSecret": "",
+        "UseSandbox": true,
+        "SandboxApiUrl": "https://sandbox-api.polar.sh",
+        "ProductionApiUrl": "https://api.polar.sh",
+        "AccessToken": "<SANDBOX_OAT>",
+        "OrganizationId": "<ORG_ID>"
+    },
+    "AllowedHosts": "*"
+}
 ```
 
 ## Implementation
 
 ### Webhook Controller
 
-Create `Controllers/WebhookController.cs`:
+Key excerpt from `samples/polar.webhook/Controllers/WebhookController.cs`:
 
 ```csharp
 using Microsoft.AspNetCore.Mvc;
@@ -54,50 +62,51 @@ using System.Text.Json;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace PolarWebhook.Controllers
+namespace Polar.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/webhook")]
     public class WebhookController : ControllerBase
     {
-        private readonly ILogger<WebhookController> _logger;
-        private readonly IWebhookService _webhookService;
-        private readonly string _webhookSecret;
+    private readonly ILogger<WebhookController> _logger;
+    private readonly IConfiguration _configuration;
+    private readonly string _webhookSecret;
 
         public WebhookController(
-            ILogger<WebhookController> logger,
-            IWebhookService webhookService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ILogger<WebhookController> logger)
         {
+            _configuration = configuration;
             _logger = logger;
-            _webhookService = webhookService;
-            _webhookSecret = configuration["Polar:WebhookSecret"] ?? "test-secret-123";
+            _webhookSecret = _configuration["PolarSettings:WebhookSecret"] ?? "";
         }
 
         [HttpPost("polar")]
-        public async Task<IActionResult> ReceiveWebhook(
-            [FromBody] JsonElement payload,
-            [FromHeader(Name = "Polar-Webhook-Signature")] string signature,
-            [FromHeader(Name = "Polar-Event-Type")] string eventType,
-            [FromHeader(Name = "Polar-Event-Id")] string eventId)
+    public async Task<IActionResult> HandlePolarWebhook()
         {
             try
             {
-                // Verify webhook signature
-                if (!VerifySignature(payload.GetRawText(), signature))
-                {
-                    _logger.LogWarning("Invalid webhook signature for event {EventId}", eventId);
-                    return Unauthorized("Invalid signature");
-                }
+        // Read raw body and headers
+        Request.EnableBuffering();
+        using var reader = new StreamReader(Request.Body, leaveOpen: true);
+        var body = await reader.ReadToEndAsync();
+        Request.Body.Position = 0;
 
-                // Log webhook receipt
-                _logger.LogInformation("Received webhook: Type={EventType}, Id={EventId}", 
-                    eventType, eventId);
+        var signature = Request.Headers["Polar-Webhook-Signature"].FirstOrDefault();
+        var eventType = Request.Headers["Polar-Event-Type"].FirstOrDefault();
+        var eventId = Request.Headers["Polar-Event-Id"].FirstOrDefault();
 
-                // Process webhook asynchronously
-                await _webhookService.ProcessWebhookAsync(eventType, payload, eventId);
+        // TODO: Verify signature when secret is configured
+        if (!string.IsNullOrEmpty(_webhookSecret))
+        {
+            _logger.LogWarning("Webhook signature verification is not yet implemented");
+        }
 
-                return Ok(new { success = true, eventId });
+        var payload = JsonSerializer.Deserialize<PolarWebhookPayload>(body);
+        _logger.LogInformation("Received webhook: Type={EventType}, Id={EventId}", eventType ?? payload?.Type, eventId);
+
+        // TODO: Dispatch based on payload?.Type
+        return Ok(new { success = true, eventId });
             }
             catch (Exception ex)
             {
@@ -105,14 +114,7 @@ namespace PolarWebhook.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
-
-        private bool VerifySignature(string payload, string signature)
-        {
-            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_webhookSecret));
-            var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
-            var computedSignature = Convert.ToBase64String(computedHash);
-            return signature == computedSignature;
-        }
+    // Note: signature verification is pending
     }
 }
 ```
@@ -291,7 +293,7 @@ app.Run();
 
 ### Application Settings
 
-Create `appsettings.json`:
+Create `appsettings.json` (sample):
 
 ```json
 {
@@ -301,11 +303,14 @@ Create `appsettings.json`:
       "Microsoft.AspNetCore": "Warning"
     }
   },
-  "Polar": {
-    "WebhookSecret": "test-secret-123",
-    "ApiKey": "YOUR_API_KEY",
-    "Environment": "Sandbox"
-  },
+    "PolarSettings": {
+        "WebhookSecret": "",
+        "UseSandbox": true,
+        "SandboxApiUrl": "https://sandbox-api.polar.sh",
+        "ProductionApiUrl": "https://api.polar.sh",
+        "AccessToken": "<SANDBOX_OAT>",
+        "OrganizationId": "<ORG_ID>"
+    },
   "AllowedHosts": "*"
 }
 ```
@@ -355,8 +360,8 @@ Copy the HTTPS forwarding URL (e.g., `https://abc123.ngrok-free.app`)
 3. Go to **Settings → Webhooks**
 4. Click **Add Webhook**
 5. Configure the webhook:
-   - **Endpoint URL**: `https://abc123.ngrok-free.app/api/webhook/polar`
-   - **Secret**: `test-secret-123`
+    - **Endpoint URL**: `https://abc123.ngrok-free.app/api/webhook/polar`
+    - **Secret**: leave empty for now (signature verification pending)
    - **Events**: Select all events you want to test
 6. Click **Create Webhook**
 
@@ -501,7 +506,7 @@ Enable detailed logging in `appsettings.Development.json`:
 ### Security
 - Never commit webhook secrets to source control
 - Use environment variables or secure configuration
-- Validate signatures on every request
+- Validate signatures on every request (enable once implemented)
 - Implement rate limiting
 - Log security events
 
@@ -568,5 +573,5 @@ Enable detailed logging in `appsettings.Development.json`:
 
 ---
 
-*Last Updated: 2025-08-22*
+*Last Updated: 2025-08-23*
 *Version: 1.0.0*

@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using PolarNet.Models;
+using PolarNet.Services;
 
 namespace Polar.Controllers;
 
@@ -11,13 +12,15 @@ public class WebhookController : ControllerBase
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<WebhookController> _logger;
-    private readonly string _webhookSecret;
+    private readonly PolarWebhookService _webhookService;
+    private readonly IPolarWebhookEventHandler _handler;
 
-    public WebhookController(IConfiguration configuration, ILogger<WebhookController> logger)
+    public WebhookController(IConfiguration configuration, ILogger<WebhookController> logger, PolarWebhookService webhookService, IPolarWebhookEventHandler handler)
     {
         _configuration = configuration;
         _logger = logger;
-        _webhookSecret = _configuration["PolarSettings:WebhookSecret"] ?? "";
+        _webhookService = webhookService;
+        _handler = handler;
     }
 
     // GET: api/webhook/test
@@ -44,7 +47,7 @@ public class WebhookController : ControllerBase
         {
             // Read the raw body
             Request.EnableBuffering();
-            using var reader = new StreamReader(Request.Body, leaveOpen: true);
+            using var reader = new StreamReader(Request.Body, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
             var body = await reader.ReadToEndAsync();
             Request.Body.Position = 0;
 
@@ -56,68 +59,23 @@ public class WebhookController : ControllerBase
             _logger.LogInformation("Received webhook - ID: {WebhookId}, Timestamp: {Timestamp}", 
                 webhookId, webhookTimestamp);
 
-            // Verify webhook signature if secret is configured
-            if (!string.IsNullOrEmpty(_webhookSecret))
+            // Verify webhook signature (skips if secret not set)
+            var isValid = _webhookService.VerifySignature(Encoding.UTF8.GetBytes(body), webhookSignature ?? string.Empty);
+            if (!isValid)
             {
-                // TODO: Implement webhook signature verification
-                // For now, we'll just log that verification is skipped
-                _logger.LogWarning("Webhook signature verification is not yet implemented");
-                
-                // In production, you should verify the webhook signature
-                // using a library like StandardWebhooks or implement
-                // the verification according to Polar's documentation
+                _logger.LogWarning("Invalid webhook signature for event {WebhookId}", webhookId);
+                return Unauthorized(new { error = "invalid_signature" });
             }
 
             // Parse the webhook payload using System.Text.Json
-            var payload = JsonSerializer.Deserialize<PolarWebhookPayload>(body);
+            var payload = _webhookService.Parse(body);
             if (payload == null)
             {
                 _logger.LogError("❌ Webhook 페이로드 파싱 실패");
                 return BadRequest("Invalid payload");
             }
-            var eventType = payload.Type;
-
-            _logger.LogInformation("Processing webhook event: {EventType}", eventType);
-
-            // Process different webhook event types
-        switch (eventType)
-            {
-                case "checkout.created":
-                    await HandleCheckoutCreated(payload.Data);
-                    break;
-
-                case "checkout.updated":
-                    await HandleCheckoutUpdated(payload.Data);
-                    break;
-
-                case "order.created":
-                    await HandleOrderCreated(payload.Data);
-                    break;
-
-                case "subscription.created":
-                    await HandleSubscriptionCreated(payload.Data);
-                    break;
-
-                case "subscription.updated":
-                    await HandleSubscriptionUpdated(payload.Data);
-                    break;
-
-                case "subscription.canceled":
-                    await HandleSubscriptionCanceled(payload.Data);
-                    break;
-
-                case "customer.created":
-                    await HandleCustomerCreated(payload.Data);
-                    break;
-
-                case "customer.updated":
-                    await HandleCustomerUpdated(payload.Data);
-                    break;
-
-                default:
-                    _logger.LogInformation("Unhandled event type: {EventType}", eventType);
-                    break;
-            }
+            _logger.LogInformation("Processing webhook event: {EventType}", payload.Type);
+            await _webhookService.DispatchAsync(payload, _handler);
 
             return Ok(new { received = true });
         }
@@ -284,3 +242,5 @@ public class WebhookController : ControllerBase
         }
     }
 }
+
+// Handler is now registered via DI in Program.cs (SampleWebhookHandler)

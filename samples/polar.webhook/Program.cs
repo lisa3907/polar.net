@@ -1,4 +1,6 @@
 using Polar.Services;
+using PolarNet.Extensions;
+using PolarNet.Services;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +15,9 @@ builder.Services.AddHttpClient<IPolarService, PolarService>();
 
 // Register Polar service
 builder.Services.AddScoped<IPolarService, PolarService>();
+
+// Register Polar webhook services + handler via DI
+builder.Services.AddPolarWebhooks<SampleWebhookHandler>(builder.Configuration);
 
 // Configure CORS for development
 builder.Services.AddCors(options =>
