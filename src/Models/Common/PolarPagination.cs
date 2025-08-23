@@ -10,11 +10,15 @@ namespace PolarNet.Models
     /// </remarks>
     public class PolarPagination
     {
-        /// <summary>Total number of items across all pages.</summary>
+        /// <summary>
+        /// Total number of items across all pages.
+        /// </summary>
         [JsonPropertyName("total_count")]
         public int TotalCount { get; set; }
 
-        /// <summary>Maximum available page index.</summary>
+        /// <summary>
+        /// Maximum available page index.
+        /// </summary>
         [JsonPropertyName("max_page")]
         public int MaxPage { get; set; }
     }

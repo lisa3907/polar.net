@@ -43,24 +43,8 @@ namespace PolarNet.Services
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null.</exception>
         /// <exception cref="ArgumentException">Thrown when <see cref="PolarClientOptions.AccessToken"/> is missing or whitespace.</exception>
         public PolarClient(PolarClientOptions options)
+            : this(options, (HttpMessageHandler?)null)
         {
-            if (options is null) throw new ArgumentNullException(nameof(options));
-            if (string.IsNullOrWhiteSpace(options.AccessToken))
-                throw new ArgumentException("AccessToken is required", nameof(options));
-
-            var baseUrl = options.BaseUrl.TrimEnd('/');
-
-            var handler = new HttpClientHandler
-            {
-                AllowAutoRedirect = false // preserve Authorization across redirects by handling them manually
-            };
-            _http = new HttpClient(handler) { BaseAddress = new Uri(baseUrl) };
-            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", options.AccessToken);
-            _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            _organizationId = options.OrganizationId;
-            _defaultProductId = options.DefaultProductId;
-            _defaultPriceId = options.DefaultPriceId;
         }
 
         /// <summary>
@@ -85,6 +69,7 @@ namespace PolarNet.Services
             {
                 h.AllowAutoRedirect = false;
             }
+
             _http = new HttpClient(handler);
             _http.BaseAddress = new Uri(baseUrl);
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", options.AccessToken);
@@ -98,6 +83,15 @@ namespace PolarNet.Services
         /// <summary>
         /// Sends an HTTP request and manually follows redirects while preserving Authorization headers.
         /// </summary>
+        /// <param name="method">The HTTP method to use (GET, POST, etc.).</param>
+        /// <param name="url">The request URL. Can be relative to the configured BaseAddress or an absolute URL.</param>
+        /// <param name="content">Optional request body content. Typically null for GET/HEAD.</param>
+        /// <returns>The final <see cref="HttpResponseMessage"/> after following redirects (up to 5).</returns>
+        /// <remarks>
+        /// This method preserves the Authorization header across redirects and recreates <see cref="StringContent"/>
+        /// for non-idempotent methods when necessary. It does not throw for non-success status codes; callers should
+        /// check <see cref="HttpResponseMessage.IsSuccessStatusCode"/> or call <see cref="HttpResponseMessage.EnsureSuccessStatusCode"/>.
+        /// </remarks>
         private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, HttpContent? content = null)
         {
             const int maxRedirects = 5;
@@ -186,6 +180,8 @@ namespace PolarNet.Services
         /// <summary>
         /// Lists products filtered by the configured <c>OrganizationId</c>.
         /// </summary>
+        /// <param name="page">1-based page number. Defaults to 1.</param>
+        /// <param name="limit">Items per page (1-100). Defaults to 10.</param>
         /// <returns>Paged list containing products and pagination metadata.</returns>
         /// <exception cref="ArgumentException">Thrown if <c>OrganizationId</c> is not configured in options.</exception>
         /// <exception cref="HttpRequestException">Thrown if the HTTP request fails.</exception>
@@ -221,6 +217,8 @@ namespace PolarNet.Services
         /// Lists prices for a product.
         /// </summary>
         /// <param name="productId">Product id to list prices for.</param>
+        /// <param name="page">1-based page number. Defaults to 1.</param>
+        /// <param name="limit">Items per page (1-100). Defaults to 10.</param>
         /// <returns>Paged list of prices.</returns>
         /// <exception cref="ArgumentException">Thrown if <paramref name="productId"/> is null or whitespace.</exception>
         /// <exception cref="HttpRequestException">Thrown if the HTTP request fails.</exception>
@@ -237,7 +235,7 @@ namespace PolarNet.Services
 
         // -------------------- Customers --------------------
         /// <summary>
-    /// Creates a new customer in the configured organization.
+        /// Creates a new customer in the configured organization.
         /// </summary>
         /// <param name="email">Customer email. Required by the API.</param>
         /// <param name="name">Optional display name. Defaults to the local part of the email.</param>
@@ -245,7 +243,7 @@ namespace PolarNet.Services
         /// <exception cref="ArgumentException">Thrown if <c>OrganizationId</c> is not configured.</exception>
         /// <exception cref="Exception">Thrown with response body when the API returns a non-success status code.</exception>
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
-    /// <remarks>API doc: https://docs.polar.sh/api-reference/customers/create</remarks>
+        /// <remarks>API doc: https://docs.polar.sh/api-reference/customers/create</remarks>
         public async Task<PolarCustomer> CreateCustomerAsync(string email, string? name = null)
         {
             var request = new CreateCustomerRequest
@@ -313,6 +311,8 @@ namespace PolarNet.Services
         /// <summary>
         /// Lists customers for the configured organization.
         /// </summary>
+        /// <param name="page">1-based page number. Defaults to 1.</param>
+        /// <param name="limit">Items per page (1-100). Defaults to 10.</param>
         /// <returns>Paged list of customers.</returns>
         /// <exception cref="ArgumentException">Thrown if <c>OrganizationId</c> is not configured.</exception>
         /// <exception cref="HttpRequestException">Thrown if the HTTP request fails.</exception>
@@ -402,6 +402,8 @@ namespace PolarNet.Services
         /// <summary>
         /// Lists subscriptions for the configured organization.
         /// </summary>
+        /// <param name="page">1-based page number. Defaults to 1.</param>
+        /// <param name="limit">Items per page (1-100). Defaults to 10.</param>
         /// <returns>Paged list of subscriptions.</returns>
         /// <exception cref="ArgumentException">Thrown if <c>OrganizationId</c> is not configured.</exception>
         /// <exception cref="HttpRequestException">Thrown if the HTTP request fails.</exception>
@@ -473,18 +475,21 @@ namespace PolarNet.Services
         /// Creates a custom checkout session using the default price configured in options.
         /// </summary>
         /// <param name="customerEmail">Optional customer email to prefill at checkout.</param>
-        /// <param name="successUrl">Optional redirect URL after successful checkout. Defaults to a placeholder URL.</param>
+        /// <param name="successUrl">Required redirect URL after successful checkout.</param>
         /// <returns>The created <see cref="PolarCheckout"/> session object.</returns>
-        /// <exception cref="ArgumentException">Thrown if <c>DefaultPriceId</c> is not configured in options.</exception>
+        /// <exception cref="ArgumentException">Thrown if <c>DefaultPriceId</c> is not configured in options, or when <paramref name="successUrl"/> is null/whitespace.</exception>
         /// <exception cref="Exception">Thrown with response body when the API returns a non-success status code.</exception>
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarCheckout> CreateCheckoutAsync(string? customerEmail = null, string? successUrl = null)
         {
             var priceId = _defaultPriceId ?? throw new ArgumentException("DefaultPriceId must be provided in options");
+            if (string.IsNullOrWhiteSpace(successUrl))
+                throw new ArgumentException("successUrl is required", nameof(successUrl));
+
             var request = new CreateCheckoutRequest
             {
                 ProductPriceId = priceId,
-                SuccessUrl = string.IsNullOrWhiteSpace(successUrl) ? "https://example.com/success" : successUrl,
+                SuccessUrl = successUrl,
                 CustomerEmail = customerEmail ?? string.Empty,
                 Metadata = new Dictionary<string, string>
                 {
@@ -528,6 +533,8 @@ namespace PolarNet.Services
         /// <summary>
         /// Lists orders for the configured organization.
         /// </summary>
+        /// <param name="page">1-based page number. Defaults to 1.</param>
+        /// <param name="limit">Items per page (1-100). Defaults to 10.</param>
         /// <returns>Paged list of orders.</returns>
         /// <exception cref="ArgumentException">Thrown if <c>OrganizationId</c> is not configured.</exception>
         /// <exception cref="HttpRequestException">Thrown if the HTTP request fails.</exception>
@@ -560,6 +567,8 @@ namespace PolarNet.Services
         /// <summary>
         /// Lists benefits for the configured organization.
         /// </summary>
+        /// <param name="page">1-based page number. Defaults to 1.</param>
+        /// <param name="limit">Items per page (1-100). Defaults to 10.</param>
         /// <returns>Paged list of benefits.</returns>
         /// <exception cref="ArgumentException">Thrown if <c>OrganizationId</c> is not configured.</exception>
         /// <exception cref="HttpRequestException">Thrown if the HTTP request fails.</exception>
@@ -573,7 +582,12 @@ namespace PolarNet.Services
                    ?? throw new InvalidOperationException("Failed to deserialize benefit list");
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Disposes the client and releases the underlying HTTP resources.
+        /// </summary>
+        /// <remarks>
+        /// After calling this method, the instance should no longer be used to perform API calls.
+        /// </remarks>
         public void Dispose()
         {
             _http.Dispose();

@@ -1,5 +1,6 @@
 // Enable nullable for this file
 #nullable enable
+
 using System.Text.Json.Serialization;
 using System.Collections.Generic;
 
@@ -14,35 +15,49 @@ namespace PolarNet.Models
     /// </remarks>
     public class CreateCustomerRequest
     {
-        /// <summary>Customer email (required).</summary>
+        /// <summary>
+        /// Customer email (required).
+        /// </summary>
         [JsonPropertyName("email")]
         public string Email { get; set; } = string.Empty;
 
-        /// <summary>Customer name (optional).</summary>
+        /// <summary>
+        /// Customer name (optional).
+        /// </summary>
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
 
-        /// <summary>Optional external reference identifier.</summary>
+        /// <summary>
+        /// Optional external reference identifier.
+        /// </summary>
         [JsonPropertyName("external_id")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? ExternalId { get; set; }
 
-        /// <summary>Arbitrary metadata.</summary>
+        /// <summary>
+        /// Arbitrary metadata.
+        /// </summary>
         [JsonPropertyName("metadata")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, string>? Metadata { get; set; }
 
-        /// <summary>Postal billing address.</summary>
+        /// <summary>
+        /// Postal billing address.
+        /// </summary>
         [JsonPropertyName("billing_address")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public PolarBillingAddress? BillingAddress { get; set; }
 
-        /// <summary>Optional tax id array, e.g. ["911144442","us_ein"].</summary>
+        /// <summary>
+        /// Optional tax id array, e.g. ["911144442","us_ein"].
+        /// </summary>
         [JsonPropertyName("tax_id")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<string>? TaxId { get; set; }
 
-        /// <summary>Owning organization id (omit when using an organization token).</summary>
+        /// <summary>
+        /// Owning organization id (omit when using an organization token).
+        /// </summary>
         [JsonPropertyName("organization_id")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? OrganizationId { get; set; }

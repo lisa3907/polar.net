@@ -14,27 +14,39 @@ namespace PolarNet.Models
     /// </remarks>
     public class PolarCustomer
     {
-        /// <summary>Unique customer identifier.</summary>
+        /// <summary>
+        /// Unique customer identifier.
+        /// </summary>
         [JsonPropertyName("id")]
         public string Id { get; set; } = string.Empty;
 
-        /// <summary>Customer email address.</summary>
+        /// <summary>
+        /// Customer email address.
+        /// </summary>
         [JsonPropertyName("email")]
         public string Email { get; set; } = string.Empty;
 
-        /// <summary>Customer name.</summary>
+        /// <summary>
+        /// Customer name.
+        /// </summary>
         [JsonPropertyName("name")]
         public string? Name { get; set; }
 
-        /// <summary>Owning organization id.</summary>
+        /// <summary>
+        /// Owning organization id.
+        /// </summary>
         [JsonPropertyName("organization_id")]
         public string OrganizationId { get; set; } = string.Empty;
 
-        /// <summary>Creation timestamp (UTC).</summary>
+        /// <summary>
+        /// Creation timestamp (UTC).
+        /// </summary>
         [JsonPropertyName("created_at")]
         public DateTime CreatedAt { get; set; }
 
-        /// <summary>Last modification timestamp (UTC).</summary>
+        /// <summary>
+        /// Last modification timestamp (UTC).
+        /// </summary>
         [JsonPropertyName("modified_at")]
         public DateTime? ModifiedAt { get; set; }
     }

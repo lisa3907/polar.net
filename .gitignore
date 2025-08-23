@@ -267,3 +267,7 @@ __pycache__/
 ./CLAUD.local.md
 nul
 appsettings.Development.json
+
+# Allow documentation release notes to be tracked
+!docs/releases/
+!docs/releases/**

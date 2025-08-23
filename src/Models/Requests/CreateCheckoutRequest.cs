@@ -11,19 +11,27 @@ namespace PolarNet.Models
     /// </remarks>
     public class CreateCheckoutRequest
     {
-        /// <summary>Product price identifier (required).</summary>
+        /// <summary>
+        /// Product price identifier (required).
+        /// </summary>
         [JsonPropertyName("product_price_id")]
         public string ProductPriceId { get; set; } = string.Empty;
 
-        /// <summary>Success redirect URL.</summary>
+        /// <summary>
+        /// Success redirect URL.
+        /// </summary>
         [JsonPropertyName("success_url")]
         public string SuccessUrl { get; set; } = string.Empty;
 
-        /// <summary>Customer email if known.</summary>
+        /// <summary>
+        /// Customer email if known.
+        /// </summary>
         [JsonPropertyName("customer_email")]
         public string CustomerEmail { get; set; } = string.Empty;
 
-        /// <summary>Arbitrary metadata to attach to the checkout.</summary>
+        /// <summary>
+        /// Arbitrary metadata to attach to the checkout.
+        /// </summary>
         [JsonPropertyName("metadata")]
         public Dictionary<string, string> Metadata { get; set; } = new();
     }

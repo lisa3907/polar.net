@@ -10,7 +10,9 @@ namespace PolarNet.Models
     /// </remarks>
     public class CreateSubscriptionRequest
     {
-        /// <summary>Product price identifier.</summary>
+        /// <summary>
+        /// Product price identifier.
+        /// </summary>
         [JsonPropertyName("product_price_id")]
         public string ProductPriceId { get; set; } = string.Empty;
     }

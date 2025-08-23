@@ -11,22 +11,40 @@ namespace PolarNet.Models
     /// </remarks>
     public class CheckoutCreatedEvent
     {
-    /// <summary>Checkout session identifier.</summary>
-    [JsonPropertyName("id")] public string Id { get; set; } = string.Empty;
+        /// <summary>
+        /// Checkout session identifier.
+        /// </summary>
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
 
-    /// <summary>Checkout status.</summary>
-    [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
+        /// <summary>
+        /// Checkout status.
+        /// </summary>
+        [JsonPropertyName("status")]
+        public string Status { get; set; } = string.Empty;
 
-    /// <summary>Customer identifier (if available).</summary>
-    [JsonPropertyName("customer_id")] public string CustomerId { get; set; } = string.Empty;
+        /// <summary>
+        /// Customer identifier (if available).
+        /// </summary>
+        [JsonPropertyName("customer_id")]
+        public string CustomerId { get; set; } = string.Empty;
 
-    /// <summary>Product identifier.</summary>
-    [JsonPropertyName("product_id")] public string ProductId { get; set; } = string.Empty;
+        /// <summary>
+        /// Product identifier.
+        /// </summary>
+        [JsonPropertyName("product_id")]
+        public string ProductId { get; set; } = string.Empty;
 
-    /// <summary>Success redirect URL.</summary>
-    [JsonPropertyName("success_url")] public string SuccessUrl { get; set; } = string.Empty;
+        /// <summary>
+        /// Success redirect URL.
+        /// </summary>
+        [JsonPropertyName("success_url")]
+        public string SuccessUrl { get; set; } = string.Empty;
 
-    /// <summary>Creation timestamp (UTC).</summary>
-    [JsonPropertyName("created_at")] public DateTime CreatedAt { get; set; }
+        /// <summary>
+        /// Creation timestamp (UTC).
+        /// </summary>
+        [JsonPropertyName("created_at")]
+        public DateTime CreatedAt { get; set; }
     }
 }

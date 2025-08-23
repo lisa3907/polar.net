@@ -214,7 +214,7 @@ namespace PolarNet.Tests
             Skip.If(PolarSandboxFixture.IsPlaceholder(_fx.PriceId), "PriceId (DefaultPriceId) required for checkout tests.");
 
             // Create checkout (uses DefaultPriceId from options)
-            var checkout = await client.CreateCheckoutAsync($"buyer-{Guid.NewGuid():N}@mailinator.com");
+            var checkout = await client.CreateCheckoutAsync($"buyer-{Guid.NewGuid():N}@mailinator.com", "https://example.com/success");
             Assert.False(string.IsNullOrWhiteSpace(checkout.Id));
 
             var got = await client.GetCheckoutAsync(checkout.Id);

@@ -11,11 +11,15 @@ namespace PolarNet.Models
     /// </remarks>
     public class PolarListResponse<T>
     {
-        /// <summary>Items returned on the current page.</summary>
+        /// <summary>
+        /// Items returned on the current page.
+        /// </summary>
         [JsonPropertyName("items")]
         public List<T> Items { get; set; } = new();
 
-        /// <summary>Pagination metadata for the entire collection.</summary>
+        /// <summary>
+        /// Pagination metadata for the entire collection.
+        /// </summary>
         [JsonPropertyName("pagination")]
         public PolarPagination Pagination { get; set; } = new();
     }

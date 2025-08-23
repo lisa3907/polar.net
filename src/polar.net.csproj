@@ -10,9 +10,9 @@
 		<RootNamespace>PolarNet</RootNamespace>
 
 		<!-- Versioning -->
-		<Version>1.0.1</Version>
-		<AssemblyVersion>1.0.1.0</AssemblyVersion>
-		<FileVersion>1.0.1.0</FileVersion>
+		<Version>1.1.1</Version>
+		<AssemblyVersion>1.1.1.0</AssemblyVersion>
+		<FileVersion>1.1.1.0</FileVersion>
 
 		<!-- Package Information -->
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -30,47 +30,22 @@
 		<PackageIcon>logomark_black.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageTags>polar;payments;subscriptions;api;client</PackageTags>
-		<PackageReleaseNotes>PolarNet v1.0.1 — 2025-08-22
-This release finalizes the model reorganization, standardizes JSON across the solution, and expands the client with additional API coverage—all without breaking public APIs.
+		<PackageReleaseNotes>PolarNet v1.1.1 — 2025-08-23
 
 Highlights
-One-class-per-file models, organized under Models/{Common, Resources, Requests, CustomerState, Webhooks}
-System.Text.Json used uniformly across library, samples, and webhook
-Expanded PolarClient endpoints (Prices, Orders, Customer State)
-Sample webhook upgraded and aligned to core models
-Build and tests verified across all target frameworks
-Added
-PolarClient:
-Prices: GetPriceAsync, ListPricesAsync
-Orders: GetOrderAsync (ListOrdersAsync already present)
-Customer State: GetCustomerStateAsync
-Tests:
-URL composition and validation with fake HttpMessageHandler
-Config-driven tests reading BaseUrl and OrganizationId
-Changed
-Models:
-Split into per-class files with English XML documentation
-Categorized under: Common, Resources, Requests, CustomerState, Webhooks
-Legacy root model files excluded from compilation
-Webhook sample:
-Migrated to System.Text.Json
-Controllers handle JsonElement payloads
-Uses core PolarNet models (removed duplicate sample models)
-Configuration:
-Console sample, webhook, and tests read BaseUrl/AccessToken/IDs from appsettings.json
-Fixed / Cleanup
-Resolved duplicate type definitions by excluding root-level model files
-Addressed nullable annotations locally in CustomerState models (#nullable enable where needed)
-General code comments and docs standardized in English
-Breaking Changes
-None. Namespaces and type names remain the same; public API is unchanged.
+- Change: CreateCheckoutAsync now requires a non-empty successUrl; throws ArgumentException otherwise.
+- Refactor: Consolidated PolarClient constructors by delegating to the handler-based overload (removed duplicate init logic).
+- Docs: Standardized XML docs across the codebase (converted single-line &lt;summary&gt; to multiline, added explicit docs for PolarWebhookEventHandlerBase and SendAsync, clarified Dispose and pagination params).
+- Webhooks/Tests: Added unit tests for signature verification, envelope parsing, and dispatch; improved sample webhook with in-memory event store and a GET /api/webhook/events endpoint for E2E verification.
+
 Migration Notes
-If you referenced models from the sample webhook project, switch to PolarNet core models.
-Ensure appsettings.json provides UseSandbox, SandboxApiUrl, ProductionApiUrl, AccessToken, OrganizationId.
-No code changes required for consumers of PolarNet’s public API.
-Packaging
-NuGet-ready with embedded symbols and metadata; no pack behavior changes in this release.
-Thanks for using PolarNet!</PackageReleaseNotes>
+- Pass a valid successUrl when calling CreateCheckoutAsync.
+- No other public API changes expected; existing consumers should continue to work.
+
+Targets
+- netstandard2.0, netstandard2.1, net8.0, net9.0.
+
+Thank you for using PolarNet!</PackageReleaseNotes>
 
 		<!-- Repository Information -->
 		<RepositoryUrl>https://github.com/lisa3907/polar.net</RepositoryUrl>

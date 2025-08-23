@@ -1,5 +1,6 @@
 // Enable nullable to allow string? annotations in this file only
 #nullable enable
+
 using System;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
