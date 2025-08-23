@@ -19,6 +19,9 @@ builder.Services.AddScoped<IPolarService, PolarService>();
 // Register Polar webhook services + handler via DI
 builder.Services.AddPolarWebhooks<SampleWebhookHandler>(builder.Configuration);
 
+// Register in-memory webhook store for E2E test verification
+builder.Services.AddSingleton<IWebhookEventStore, InMemoryWebhookStore>();
+
 // Configure CORS for development
 builder.Services.AddCors(options =>
 {

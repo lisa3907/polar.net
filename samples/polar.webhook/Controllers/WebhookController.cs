@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using PolarNet.Models;
 using PolarNet.Services;
+using Polar.Services;
 
 namespace Polar.Controllers;
 
@@ -14,13 +15,15 @@ public class WebhookController : ControllerBase
     private readonly ILogger<WebhookController> _logger;
     private readonly PolarWebhookService _webhookService;
     private readonly IPolarWebhookEventHandler _handler;
+    private readonly IWebhookEventStore _store;
 
-    public WebhookController(IConfiguration configuration, ILogger<WebhookController> logger, PolarWebhookService webhookService, IPolarWebhookEventHandler handler)
+    public WebhookController(IConfiguration configuration, ILogger<WebhookController> logger, PolarWebhookService webhookService, IPolarWebhookEventHandler handler, IWebhookEventStore store)
     {
         _configuration = configuration;
         _logger = logger;
         _webhookService = webhookService;
         _handler = handler;
+        _store = store;
     }
 
     // GET: api/webhook/test
@@ -34,8 +37,8 @@ public class WebhookController : ControllerBase
             timestamp = DateTime.UtcNow,
             endpoints = new[]
             {
-                "/api/webhook/test - 테스트 엔드포인트",
-                "/api/webhook/polar - Polar webhook 수신"
+                "/api/webhook/test - test endpoint",
+                "/api/webhook/polar - Polar webhook receive"
             }
         });
     }
@@ -71,11 +74,19 @@ public class WebhookController : ControllerBase
             var payload = _webhookService.Parse(body);
             if (payload == null)
             {
-                _logger.LogError("❌ Webhook 페이로드 파싱 실패");
+                _logger.LogError("❌ Webhook failed to parse payload");
                 return BadRequest("Invalid payload");
             }
             _logger.LogInformation("Processing webhook event: {EventType}", payload.Type);
             await _webhookService.DispatchAsync(payload, _handler);
+
+            // Store received event for E2E tests
+            _store.Add(new WebhookEventRecord(
+                payload.EventId,
+                payload.Type,
+                payload.CreatedAt == default ? DateTime.UtcNow : payload.CreatedAt,
+                payload.Data
+            ));
 
             return Ok(new { received = true });
         }
@@ -89,6 +100,15 @@ public class WebhookController : ControllerBase
             _logger.LogError(ex, "Error processing webhook");
             return StatusCode(500, new { error = "Internal server error" });
         }
+    }
+
+    // GET: api/webhook/events?sinceUtc=...&type=...&max=...
+    [HttpGet("events")]
+    public IActionResult ListEvents([FromQuery] DateTime? sinceUtc = null, [FromQuery] string? type = null, [FromQuery] int max = 200)
+    {
+        var since = sinceUtc ?? DateTime.UtcNow.AddMinutes(-30);
+        var items = _store.List(since, type, max);
+        return Ok(new { count = items.Count, items });
     }
 
     private async Task HandleCheckoutCreated(JsonElement data)

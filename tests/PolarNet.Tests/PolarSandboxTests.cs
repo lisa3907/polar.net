@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using PolarNet.Models;
@@ -18,6 +20,7 @@ namespace PolarNet.Tests
         public string? OrganizationId { get; private set; }
         public string? ProductId { get; private set; }
         public string? PriceId { get; private set; }
+    public string? WebhookBaseUrl { get; private set; }
 
         private IConfigurationRoot? _config;
 
@@ -35,6 +38,7 @@ namespace PolarNet.Tests
             OrganizationId = section["OrganizationId"];
             ProductId = section["ProductId"];
             PriceId = section["PriceId"];
+            WebhookBaseUrl = section["WebhookBaseUrl"]; // e.g., https://abc123.ngrok-free.app
 
             if (IsPlaceholder(accessToken) || string.IsNullOrWhiteSpace(baseUrl))
             {
@@ -253,6 +257,67 @@ namespace PolarNet.Tests
             var org = await client.GetOrganizationAsync();
             Assert.NotNull(org);
             Assert.False(string.IsNullOrWhiteSpace(org.Id));
+        }
+
+        [SkippableFact]
+        [Trait("Category", "Integration")]
+        public async Task Webhook_Receives_CustomerCreated_Event()
+        {
+            var client = GetClientOrSkip();
+            Skip.If(PolarSandboxFixture.IsPlaceholder(_fx.WebhookBaseUrl), "WebhookBaseUrl not configured (tests/appsettings.json → PolarSettings:WebhookBaseUrl, e.g., ngrok URL)");
+
+            // 1) Mark start time for filtering
+            var since = DateTime.UtcNow.AddSeconds(-5);
+
+            // 2) Trigger an event in Sandbox (create customer)
+            var email = $"hook-{Guid.NewGuid():N}@mailinator.com";
+            var created = await client.CreateCustomerAsync(email, "Webhook Test");
+            Assert.False(string.IsNullOrWhiteSpace(created.Id));
+
+            // 3) Poll webhook sample endpoint for receipt
+            using var http = new HttpClient();
+            http.Timeout = TimeSpan.FromSeconds(5);
+
+            var deadline = DateTime.UtcNow.AddMinutes(2);
+            WebhookPollResponse? last = null;
+            while (DateTime.UtcNow < deadline)
+            {
+                try
+                {
+                    var url = new Uri(new Uri(_fx.WebhookBaseUrl!), $"/api/webhook/events?sinceUtc={Uri.EscapeDataString(since.ToString("o"))}&type=customer.created&max=50");
+                    var resp = await http.GetAsync(url);
+                    var content = await resp.Content.ReadAsStringAsync();
+                    resp.EnsureSuccessStatusCode();
+                    last = System.Text.Json.JsonSerializer.Deserialize<WebhookPollResponse>(content);
+                    if (last?.Items?.Any(i => i.Data.TryGetProperty("id", out var idProp) && idProp.GetString() == created.Id) == true)
+                    {
+                        return; // success
+                    }
+                }
+                catch
+                {
+                    // swallow and retry until deadline
+                }
+                await Task.Delay(2000);
+            }
+
+            // If we get here, no event observed
+            var detail = last == null ? "(no response)" : $"lastCount={last.Count}";
+            throw new Xunit.Sdk.XunitException($"Timed out waiting for webhook event. {detail}");
+        }
+
+        private sealed class WebhookPollResponse
+        {
+            public int Count { get; set; }
+            public List<WebhookItem> Items { get; set; } = new();
+        }
+
+        private sealed class WebhookItem
+        {
+            public string EventId { get; set; } = string.Empty;
+            public string Type { get; set; } = string.Empty;
+            public DateTime CreatedAt { get; set; }
+            public System.Text.Json.JsonElement Data { get; set; }
         }
     }
 }

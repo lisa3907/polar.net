@@ -18,7 +18,7 @@ Using the sandbox environment, the suite exercises these API flows:
 - Orders: List orders, Get first order (if any)
 - Benefits: List benefits
 
-Additionally, webhook signature verification has unit tests (no network) to validate HMAC logic.
+Additionally, webhook signature verification has unit tests (no network) to validate HMAC logic, and an optional Sandbox end-to-end (E2E) webhook test verifies real delivery via the sample webhook server.
 
 ## Configuration
 
@@ -36,7 +36,8 @@ appsettings.json (sample)
     "PriceId": "<YOUR_PRICE_ID>",
     "SandboxApiUrl": "https://sandbox-api.polar.sh",
     "ProductionApiUrl": "https://api.polar.sh",
-    "UseSandbox": true
+  "UseSandbox": true,
+  "WebhookBaseUrl": "<YOUR_PUBLIC_WEBHOOK_BASE_URL>"
   }
 }
 ```
@@ -53,6 +54,7 @@ Environment variables (CI-friendly)
   - `POLAR_TEST_PolarSettings__SandboxApiUrl`
   - `POLAR_TEST_PolarSettings__ProductionApiUrl`
   - `POLAR_TEST_PolarSettings__UseSandbox` (e.g., `true`)
+  - `POLAR_TEST_PolarSettings__WebhookBaseUrl` (e.g., `https://abc123.ngrok-free.app`)
 
 Note: Do not commit secrets. Prefer environment variables in CI.
 
@@ -105,3 +107,51 @@ Key packages used by this test project:
 - `PolarSandboxTests.cs`: Integration tests and configuration fixture
 - `PolarWebhookTests.cs`: Webhook signature unit tests
 - `appsettings.json`: Local configuration template
+
+## Webhook E2E testing (Sandbox, real delivery)
+
+Follow the steps below to run an end-to-end webhook test (`Webhook_Receives_CustomerCreated_Event`) against the Sandbox. If required settings are missing, the test will be skipped automatically.
+
+Prerequisites
+- Sample webhook server: `samples/polar.webhook`
+- Public URL: expose your local server via ngrok (or similar)
+- Polar Sandbox account and Sandbox OAT access token
+
+1) Run the sample webhook server and expose it publicly
+- After starting the sample app, obtain a public URL.
+  - Receive endpoint: `POST /api/webhook/polar`
+  - Test/list endpoints: `GET /api/webhook/test`, `GET /api/webhook/events`
+- ngrok example: expose local port 5000 and use the issued HTTPS URL (e.g., `https://abc123.ngrok-free.app`).
+
+2) Register the webhook in Polar Sandbox
+- Polar Sandbox → Settings → Webhooks → Add Webhook
+  - Endpoint URL: `<ngrok>/api/webhook/polar`
+  - Secret: optional. If you set a secret, also set the same value in the sample app under `PolarSettings:WebhookSecret` to pass signature verification.
+  - Events: include `customer.created`
+
+3) Update test settings
+- Configure via `tests/PolarNet.Tests/appsettings.json` or environment variables:
+  - `PolarSettings:AccessToken` = Sandbox OAT
+  - `PolarSettings:UseSandbox` = true
+  - `PolarSettings:SandboxApiUrl` = `https://sandbox-api.polar.sh`
+  - `PolarSettings:WebhookBaseUrl` = your ngrok HTTPS URL (e.g., `https://abc123.ngrok-free.app`)
+
+4) Run the integration tests
+- Run all integration tests
+```powershell
+dotnet test .\tests\PolarNet.Tests\PolarNet.Tests.csproj --filter "Category=Integration"
+```
+- Run only the webhook E2E test (optional)
+```powershell
+dotnet test .\tests\PolarNet.Tests\PolarNet.Tests.csproj --filter "FullyQualifiedName~Webhook_Receives_CustomerCreated_Event"
+```
+
+How it works
+- The test creates a customer in the Polar Sandbox to trigger a `customer.created` event.
+- It then polls the sample server’s `GET /api/webhook/events` endpoint to verify receipt (up to 2 minutes).
+- If the event is observed, the test passes; if not (due to URL/network issues), it fails on timeout.
+
+Tips
+- Ensure ngrok isn’t blocked by your firewall/proxy.
+- If a secret is configured, update the sample app’s `appsettings.json` with the same secret.
+- Because this relies on external networking, occasional delays can happen; the test includes retries.
