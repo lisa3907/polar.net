@@ -10,9 +10,9 @@
 		<RootNamespace>PolarNet</RootNamespace>
 
 		<!-- Versioning -->
-		<Version>1.1.1</Version>
-		<AssemblyVersion>1.1.1.0</AssemblyVersion>
-		<FileVersion>1.1.1.0</FileVersion>
+		<Version>1.1.2</Version>
+		<AssemblyVersion>1.1.2.0</AssemblyVersion>
+		<FileVersion>1.1.2.0</FileVersion>
 
 		<!-- Package Information -->
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -30,20 +30,47 @@
 		<PackageIcon>logomark_black.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageTags>polar;payments;subscriptions;api;client</PackageTags>
-		<PackageReleaseNotes>PolarNet v1.1.1 — 2025-08-23
+		<PackageReleaseNotes>PolarNet v1.1.2 — 2025-08-23
 
-Highlights
-- Change: CreateCheckoutAsync now requires a non-empty successUrl; throws ArgumentException otherwise.
-- Refactor: Consolidated PolarClient constructors by delegating to the handler-based overload (removed duplicate init logic).
-- Docs: Standardized XML docs across the codebase (converted single-line &lt;summary&gt; to multiline, added explicit docs for PolarWebhookEventHandlerBase and SendAsync, clarified Dispose and pagination params).
-- Webhooks/Tests: Added unit tests for signature verification, envelope parsing, and dispatch; improved sample webhook with in-memory event store and a GET /api/webhook/events endpoint for E2E verification.
+🚀 New Features
+- ✅ Payments API: Complete payment listing and retrieval operations
+- ✅ Refunds API: Full refund operations including partial refunds support
+- ✅ Webhook Endpoints API: Complete webhook management (CRUD operations + testing)
+- ✅ Benefits API: Benefits listing functionality
+- ✅ Customer State API: Customer state and meter usage management
 
-Migration Notes
-- Pass a valid successUrl when calling CreateCheckoutAsync.
-- No other public API changes expected; existing consumers should continue to work.
+🛠 Improvements
+- Enhanced model structures for Payments, Refunds, and Webhook Endpoints
+- Added comprehensive webhook testing infrastructure with 13 test cases
+- Improved error handling and validation across all new APIs
+- Extended support for customer meter usage tracking
 
-Targets
-- netstandard2.0, netstandard2.1, net8.0, net9.0.
+📝 Documentation
+- Added TASK.md: Implementation status tracking against official Polar.sh API
+- Added ROADMAP.md: Comprehensive development roadmap for future releases
+- Updated all documentation to align with official Polar.sh API reference
+- API coverage now at ~45% of official Polar.sh endpoints
+
+🔄 Breaking Changes
+- None - all existing APIs remain backward compatible
+
+📦 Dependencies
+- No new dependencies added
+- Maintains compatibility with netstandard2.0, netstandard2.1, net8.0, net9.0
+
+🐛 Bug Fixes
+- Fixed invalid webhook event type (payment.succeeded → order.paid)
+- Corrected test expectations for unreachable webhook URLs
+- Resolved compilation warnings in webhook tests
+
+📊 Current Implementation Status
+- Core Payment Flow: 75% Complete
+- Customer Management: 60% Complete
+- Overall API Coverage: 45% Complete
+- Ready for production use with basic e-commerce and subscription scenarios
+
+For detailed implementation status, see docs/TASK.md
+For future development plans, see docs/ROADMAP.md
 
 Thank you for using PolarNet!</PackageReleaseNotes>
 

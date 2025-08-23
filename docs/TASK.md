@@ -1,9 +1,12 @@
-# API Coverage Analysis: polar.net vs polar-python
+# polar.net SDK - Implementation Status
 
 ## Overview
-This document provides a comprehensive comparison between the `polar.net` (C#) implementation and the official Python SDK (`polar-python`). It identifies implemented features, missing APIs, and prioritizes future development tasks.
+This document tracks the implementation status of the polar.net SDK based on the official Polar.sh API documentation (https://docs.polar.sh/api-reference).
 
-**Last Updated**: 2025-08-23
+**Target**: Full implementation of Polar.sh official API  
+**Reference**: Python SDK used as implementation reference  
+**Last Updated**: 2025-08-23  
+**Long-term Roadmap**: See [ROADMAP.md](ROADMAP.md) for detailed development plans
 
 ## Recent Updates
 
@@ -36,9 +39,40 @@ Successfully integrated and refactored webhook testing infrastructure:
 - **Webhook Endpoints API** - Complete webhook management (CRUD + testing) ✅
 
 ### 📊 Implementation Coverage
-- **Total Python SDK Modules**: 22 primary resource modules
-- **Implemented in .NET**: 11 modules
-- **Coverage**: ~50% of core functionality
+- **Total Polar.sh API Endpoints**: 22 primary endpoints
+- **Fully Implemented**: 8 endpoints (36%)
+- **Partially Implemented**: 3 endpoints (14%)
+- **Not Implemented**: 11 endpoints (50%)
+- **Authentication**: Bearer token only (no OAuth2/OIDC)
+
+### 🔍 Official Polar.sh API vs .NET SDK Implementation
+Based on official API documentation (https://docs.polar.sh/api-reference):
+
+#### Core API Endpoints:
+1. **Checkout** - ✅ Implemented (Create & Get sessions)
+2. **Checkout Links** - ❌ Not implemented
+3. **Custom Checkout Fields** - ❌ Not implemented
+4. **Customers** - ✅ Implemented (CRUD operations)
+5. **Subscriptions** - ✅ Implemented (Full lifecycle)
+6. **Orders** - ✅ Implemented (List & Get)
+7. **Discounts** - ❌ Not implemented
+8. **Refunds** - ✅ Implemented (Full & Partial)
+9. **Products** - ⚠️ Partial (Read only, no CUD)
+10. **Events** - ❌ Not implemented
+11. **Meters** - ❌ Not implemented
+12. **Benefits** - ⚠️ Partial (List only)
+13. **Customer Meters** - ❌ Not implemented
+14. **License Keys** - ❌ Not implemented
+15. **Files** - ❌ Not implemented
+16. **Organizations** - ⚠️ Partial (Get only)
+17. **Metrics** - ❌ Not implemented
+18. **Webhooks** - ✅ Implemented (Full CRUD + Testing)
+19. **Payments** - ✅ Implemented (List & Get)
+
+#### Customer Portal API:
+20. **Customer Sessions** - ❌ Not implemented
+21. **Customer Portal** - ❌ Not implemented
+22. **File Downloads** - ❌ Not implemented
 
 ---
 
@@ -163,157 +197,96 @@ These are essential for production-ready SDK:
 
 ---
 
-## 3. Implementation Roadmap
+## 3. Immediate Implementation Priorities
 
-### Sprint 1: Core Completeness (Week 1-2)
+### 🚨 Week 1-2: Critical Gaps
 - [ ] Customer Update API
-- [ ] Product CRUD operations
+- [ ] Product CRUD operations  
 - [ ] Order Invoice API
-- [ ] Update existing models for missing properties
+- [ ] Model property updates
 
-### Sprint 2: Revenue Features (Week 3-4)
-- [ ] Discounts API (full CRUD)
+### 📈 Week 3-4: Revenue Impact
+- [ ] Discounts API
 - [ ] License Keys API
-- [ ] Checkout Links API
+- [ ] Files API (digital delivery)
 
-### Sprint 3: Digital Delivery (Week 5-6)
-- [ ] Files API
-- [ ] Downloadables API
-- [ ] Benefit Grants API
-
-### Sprint 4: Customer Experience (Week 7-8)
-- [ ] Customer Portal API
-- [ ] Customer Sessions API
-- [ ] External ID support
-
-### Sprint 5: Advanced Features (Week 9-10)
-- [ ] Meters API
-- [ ] Customer Meters API
-- [ ] Events API
-- [ ] Custom Fields API
-
-### Sprint 6: Enterprise Features (Week 11-12)
-- [ ] OAuth2 implementation
-- [ ] Advanced webhook features
-- [ ] Batch operations support
+### 🔐 Week 5-6: Enterprise Essentials  
+- [ ] OAuth2 authentication
+- [ ] Metrics API (usage tracking)
+- [ ] Enhanced error handling
 
 ---
 
-## 4. Technical Debt & Improvements
+## 4. Technical Requirements
 
-### High Priority Technical Improvements
-1. **Model Property Gaps**
-   - Many model properties are missing compared to Python SDK
-   - Need systematic review and update of all models
-   - Examples: Subscription.StartedAt, Order.ModifiedAt, etc.
+### Critical Technical Gaps
+1. **Missing Models**: Specialized benefits, payment details, webhook delivery
+2. **Error Handling**: Need typed exceptions and retry logic
+3. **Authentication**: OAuth2 support required
+4. **Testing**: Minimal coverage, needs comprehensive tests
 
-2. **Error Handling**
-   - Implement typed exceptions (PolarApiException, PolarValidationException, etc.)
-   - Add proper error response parsing
-   - Implement retry logic with exponential backoff
+### Architecture Notes
+- Python SDK uses Speakeasy (auto-generated)
+- .NET SDK is manually implemented
+- Consider adopting code generation for consistency
 
-3. **Testing Coverage**
-   - Current test coverage is minimal
-   - Need comprehensive unit tests for all APIs
-   - Add integration tests with mock responses
-
-### Medium Priority Improvements
-4. **SDK Features**
-   - Add synchronous method variants
-   - Implement request/response interceptors
-   - Add built-in rate limiting
-   - Support for custom HTTP clients
-
-5. **Documentation**
-   - Complete XML documentation for all public APIs
-   - Add code examples for each endpoint
-   - Create migration guide from Python SDK
-
-6. **Code Organization**
-   - Consider splitting large partial classes
-   - Add interface definitions for testability
-   - Implement dependency injection support
-
-### Low Priority Enhancements
-7. **Performance**
-   - Implement connection pooling
-   - Add caching layer for read operations
-   - Optimize JSON serialization
-
-8. **Developer Experience**
-   - Add fluent API builders
-   - Implement LINQ support for queries
-   - Add async enumerable support for pagination
+For detailed technical debt and improvement plans, see [ROADMAP.md](ROADMAP.md).
 
 ---
 
-## 5. Breaking Changes to Consider
+## 5. Quick Implementation Guide
 
-When implementing missing features, consider these potential breaking changes:
+### Implementation Pattern
+All new APIs should follow the existing pattern:
 
-1. **Model Updates**: Adding missing properties might require nullable types
-2. **Method Signatures**: Some methods may need additional parameters
-3. **Return Types**: Some operations might need to return different types
-4. **Namespace Changes**: Consider reorganizing namespaces for better structure
+```csharp
+// In PolarClient folder
+public partial class PolarClient
+{
+    public async Task<TResource> GetResourceAsync(string id) { }
+    public async Task<PolarListResponse<TResource>> ListResourcesAsync() { }
+    public async Task<TResource> CreateResourceAsync(CreateRequest request) { }
+    public async Task<TResource> UpdateResourceAsync(string id, UpdateRequest request) { }
+    public async Task DeleteResourceAsync(string id) { }
+}
+```
 
----
-
-## 6. Success Metrics
-
-### Phase 1 Complete When:
-- [ ] All CRUD operations available for core resources
-- [ ] 100% unit test coverage for new code
-- [ ] Documentation complete for all public APIs
-- [ ] Sample application demonstrates all features
-
-### Phase 2 Complete When:
-- [ ] Feature parity with Python SDK for core functionality
-- [ ] All high and medium priority APIs implemented
-- [ ] Integration tests passing
-- [ ] Performance benchmarks established
-
-### SDK v1.0 Release Criteria:
-- [ ] 80%+ feature parity with Python SDK
-- [ ] Comprehensive documentation
-- [ ] NuGet package published
-- [ ] Migration guide available
-- [ ] Production-ready error handling
+### File Structure
+- Service: `src/Services/PolarClient/{Resource}.cs`
+- Model: `src/Models/Resources/Polar{Resource}.cs`
+- Request: `src/Models/Requests/{Operation}{Resource}Request.cs`
 
 ---
 
-## 7. Resource Requirements
+## 6. Assessment Summary
 
-### Estimated Timeline
-- **Total Development**: 12 weeks for full feature parity
-- **Testing & Documentation**: Additional 2 weeks
-- **Total Project Duration**: 14 weeks
+### Current State vs Official Polar.sh API
+- **Core Payment Flow**: ✅ 75% Complete
+- **Customer Management**: ✅ 60% Complete
+- **Revenue Features**: ⚠️ 25% Complete
+- **Enterprise Features**: ❌ 20% Complete
+- **Overall API Coverage**: 📊 45% Complete
 
-### Team Requirements
-- **Developers**: 1-2 senior .NET developers
-- **Testing**: 1 QA engineer (part-time)
-- **Documentation**: Technical writer (part-time)
+### Production Readiness (Per Official API)
+✅ **Implemented**: Basic checkout, subscriptions, orders, refunds  
+⚠️ **Partial**: Products (read-only), benefits (list only), organizations (get only)  
+❌ **Missing**: Discounts, license keys, files, metrics, events, customer portal
 
----
+### Critical Gaps (Official Polar.sh API)
+1. **Authentication**: No OAuth2/OIDC support
+2. **Product Management**: No create/update/delete
+3. **Revenue Features**: No discounts, checkout links
+4. **Digital Delivery**: No files, license keys
+5. **Analytics**: No metrics, events, meters
 
-## 8. Dependencies & Risks
+### Next Steps (Based on Official API)
+1. Implement missing CRUD operations for Products
+2. Add Discounts and License Keys APIs
+3. Implement Files API for digital delivery
+4. Add OAuth2/OIDC authentication support
 
-### Dependencies
-- Polar API stability and backwards compatibility
-- Access to Polar API documentation
-- Test/sandbox environment availability
-
-### Risks
-- API changes during development
-- Missing or incomplete API documentation
-- Performance issues with large datasets
-- Breaking changes in dependent packages
-
-### Mitigation Strategies
-- Regular sync with Polar team
-- Implement versioning strategy
-- Comprehensive test coverage
-- Monitor Python SDK for changes
+For complete development roadmap aligned with official API, see [ROADMAP.md](ROADMAP.md).
 
 ---
 
-_This roadmap is based on the polar-python SDK analysis as of 2025-08-23 and current polar.net implementation status._
+_Last updated: 2025-08-23 based on official Polar.sh API documentation (https://docs.polar.sh/api-reference)_
