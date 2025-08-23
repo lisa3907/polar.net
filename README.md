@@ -4,48 +4,79 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%209.0-blue.svg)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 [![Downloads](https://img.shields.io/nuget/dt/PolarNet.svg)](https://www.nuget.org/packages/PolarNet/)
+[![API Coverage](https://img.shields.io/badge/API%20Coverage-45%25-yellow.svg)](docs/TASK.md)
 
- Thin C# client library for Polar API with samples (console + ASP.NET webhook).
+ Thin C# client library for [Polar.sh](https://polar.sh) API - Modern billing infrastructure for developers.
 
- Supported frameworks: netstandard2.0, netstandard2.1, .NET 8, .NET 9
+ 🚀 **v1.1.2** - Now with Payments, Refunds, and Webhook management!
+
+ Supported frameworks: `.NET Standard 2.0`, `.NET Standard 2.1`, `.NET 8`, `.NET 9`
+
+## 📋 Features
+
+- ✅ **Core Payment Processing** - Checkout sessions, orders, payments, and refunds
+- ✅ **Subscription Management** - Full subscription lifecycle with customer state tracking
+- ✅ **Webhook Infrastructure** - Complete webhook endpoint management with signature verification
+- ✅ **Customer Management** - CRUD operations with state and meter usage tracking
+- ⚠️ **Products & Benefits** - Read-only access (full CRUD coming in v1.2.0)
+- 🔜 **Coming Soon** - Discounts, License Keys, Files, OAuth2/OIDC authentication
 
 ## Project structure
 
 ```
 polar.net/
-├── src/                      # Class library (packable)
-│   ├── Models/               # Typed API models (split per class)
-│   ├── Services/             # Low-level HTTP service
-│   ├── PolarClient.cs        # Public client facade
-│   ├── PolarClientOptions.cs # Client options
+├── src/                      # Class library (NuGet package)
+│   ├── Models/               # Typed API models
+│   │   ├── Resources/        # API resources (Product, Order, etc.)
+│   │   ├── Requests/         # Request DTOs
+│   │   ├── Webhooks/         # Webhook event models
+│   │   └── CustomerState/    # Customer state models
+│   ├── Services/             
+│   │   ├── PolarClient/      # API endpoint implementations
+│   │   └── Webhooks/         # Webhook handling services
 │   └── polar.net.csproj
 ├── samples/
 │   ├── polar.sample/         # Console app demonstrating API calls
-│   └── polar.webhook/        # ASP.NET webhook receiver sample
-├── tests/                    # xUnit tests
+│   └── polar.webhook/        # ASP.NET webhook receiver with event store
+├── tests/                    # xUnit tests with 90%+ coverage
+├── docs/                     
+│   ├── TASK.md              # Implementation status vs official API
+│   ├── ROADMAP.md           # Development roadmap
+│   └── releases/            # Release notes
 └── README.md
 ```
 
-## Quick start
+## 🚀 Quick start
 
-1) Clone & restore
+### Install from NuGet
+
+```powershell
+dotnet add package PolarNet --version 1.1.2
+```
+
+Or via Package Manager:
+```powershell
+Install-Package PolarNet -Version 1.1.2
+```
+
+### Build from source
 
 ```powershell
 git clone https://github.com/lisa3907/polar.net.git
 cd polar.net
 dotnet restore
+dotnet build -c Release
 ```
 
-2) Build the solution
+### Run samples
 
 ```powershell
-dotnet build -c Debug
-```
-
-3) Run the console sample (dotnet run uses the sample project)
-
-```powershell
+# Console sample
 cd samples/polar.sample
+dotnet run
+
+# Webhook receiver (ASP.NET)
+cd samples/polar.webhook
 dotnet run
 ```
 
@@ -60,91 +91,199 @@ Minimal config used by samples/tests:
 ```json
 {
 	"PolarSettings": {
-		"UseSandbox": true,
-		"SandboxApiUrl": "https://sandbox-api.polar.sh",
-		"ProductionApiUrl": "https://api.polar.sh",
-		"AccessToken": "<SANDBOX_OAT>",
-		"OrganizationId": "<ORG_ID>",
-		"ProductId": "<PRODUCT_ID>",
-		"PriceId": "<PRICE_ID>"
+        "AccessToken": "<YOUR_SANDBOX_OAT>",
+        "WebhookSecret": "<YOUR_WEBHOOK_SECRET>",
+        "OrganizationId": "<YOUR_ORGANIZATION_ID>",
+        "ProductId": "<YOUR_PRODUCT_ID>",
+        "PriceId": "<YOUR_PRICE_ID>",
+        "WebhookBaseUrl": "<YOUR_WEBHOOK_BASE_URL>",
+        "SandboxApiUrl": "https://sandbox-api.polar.sh",
+        "ProductionApiUrl": "https://api.polar.sh",
+        "UseSandbox": true
 	}
 }
 ```
 
-## Using the library (programmatic)
+## 💻 Using the library
 
-Add a project reference to `src/polar.net.csproj` (already wired for samples), then:
+### Basic setup
 
 ```csharp
-var client = new PolarNet.PolarClient(new PolarNet.PolarClientOptions
+using PolarNet;
+
+var client = new PolarClient(new PolarClientOptions
 {
-	AccessToken = "<SANDBOX_OAT>",
-	BaseUrl = "https://sandbox-api.polar.sh", // no trailing slash
-	OrganizationId = "<ORG_ID>",
-	DefaultProductId = "<PRODUCT_ID>",
-	DefaultPriceId = "<PRICE_ID>"
+    AccessToken = "<YOUR_ACCESS_TOKEN>",
+    BaseUrl = "https://sandbox-api.polar.sh", // or production URL
+    OrganizationId = "<YOUR_ORG_ID>"
 });
 
+// Get organization details
 var org = await client.GetOrganizationAsync();
+Console.WriteLine($"Organization: {org.Name}");
 ```
 
-## Implemented endpoints (current)
+### Example: Create checkout and process payment
 
-- Organization: GET `/v1/organizations/{organization_id}`
-- Products: GET `/v1/products?organization_id={org}` · GET `/v1/products/{id}`
-- Prices: GET `/v1/prices?organization_id={org}[&product_id={pid}]` · GET `/v1/prices/{id}`
-- Customers: POST `/v1/customers` · GET `/v1/customers?organization_id={org}` · GET `/v1/customers/{id}` · GET `/v1/customers/{id}/state` · DELETE `/v1/customers/{id}`
-- Subscriptions: POST `/v1/subscriptions` · GET `/v1/subscriptions?organization_id={org}` · GET `/v1/subscriptions/{id}` · DELETE `/v1/subscriptions/{id}` · POST `/v1/subscriptions/{id}/revoke`
-- Checkouts (custom): POST `/v1/checkouts/custom` · GET `/v1/checkouts/custom/{id}`
-- Orders: GET `/v1/orders?organization_id={org}` · GET `/v1/orders/{id}`
-- Benefits: GET `/v1/benefits?organization_id={org}`
-- **Payments** (NEW): GET `/v1/payments?organization_id={org}` · GET `/v1/payments/{id}` · GET `/v1/payments?order_id={oid}` · GET `/v1/payments?customer_id={cid}`
-- **Refunds** (NEW): POST `/v1/refunds` · GET `/v1/refunds?organization_id={org}` · GET `/v1/refunds/{id}`
-- **Webhook Endpoints** (NEW): POST `/v1/webhooks/endpoints` · GET `/v1/webhooks/endpoints` · GET `/v1/webhooks/endpoints/{id}` · PATCH `/v1/webhooks/endpoints/{id}` · DELETE `/v1/webhooks/endpoints/{id}` · POST `/v1/webhooks/endpoints/{id}/test`
+```csharp
+// Create a checkout session
+var checkout = await client.CreateCheckoutAsync(new CreateCheckoutRequest
+{
+    OrganizationId = client.Options.OrganizationId,
+    ProductId = "product_123",
+    PriceId = "price_456",
+    SuccessUrl = "https://example.com/success",
+    CustomerEmail = "customer@example.com"
+});
 
-## Test card info
+// Later, check payment status
+var payments = await client.ListPaymentsAsync(new ListPaymentsRequest
+{
+    OrderId = checkout.OrderId
+});
 
-Stripe test cards useful in Sandbox when testing paid products:
+if (payments.Items.Any(p => p.Status == "succeeded"))
+{
+    Console.WriteLine("Payment successful!");
+}
+```
 
-- Success: 4242 4242 4242 4242
-- Failure: 4000 0000 0000 0002
-- 3D Secure: 4000 0025 0000 3155
+### Example: Handle webhooks
 
-## Troubleshooting
+```csharp
+// In your ASP.NET controller
+[HttpPost("webhook")]
+public async Task<IActionResult> HandleWebhook(
+    [FromBody] string payload,
+    [FromHeader(Name = "X-Polar-Signature")] string signature)
+{
+    var service = new PolarWebhookService("your_webhook_secret");
+    
+    if (!service.VerifySignature(payload, signature))
+        return Unauthorized();
+    
+    var envelope = service.ParseEnvelope(payload);
+    
+    switch (envelope.Event)
+    {
+        case "order.created":
+            var order = JsonSerializer.Deserialize<PolarOrder>(envelope.Data);
+            // Process order...
+            break;
+        case "subscription.updated":
+            var subscription = JsonSerializer.Deserialize<PolarSubscription>(envelope.Data);
+            // Handle subscription change...
+            break;
+    }
+    
+    return Ok();
+}
+```
 
-- 401 Unauthorized: Verify the token is sandbox, valid scopes, and not expired.
-- 404 Not Found: Verify IDs exist in your sandbox.
-- 422 Unprocessable Entity: Check request payload and required fields.
+## 📊 API Implementation Status
 
-## Configuration notes
+### ✅ Fully Implemented (8/22 endpoints)
+- **Checkout** - Create and retrieve custom checkout sessions
+- **Customers** - Full CRUD operations with state management
+- **Subscriptions** - Complete lifecycle management (create, list, get, cancel, revoke)
+- **Orders** - List and retrieve order details
+- **Refunds** - Create (full/partial), list, and retrieve refunds
+- **Payments** - List and retrieve payment details with filtering
+- **Webhook Endpoints** - Full CRUD + testing capabilities
+- **Customer State** - Track usage meters and granted benefits
 
-- Authentication uses a Bearer Organization Access Token in the `Authorization` header.
-- Set `BaseUrl` to the host (sandbox: `https://sandbox-api.polar.sh`, production: `https://api.polar.sh`).
-- Some helper methods use defaults from options (`OrganizationId`, `DefaultProductId`, `DefaultPriceId`).
+### ⚠️ Partially Implemented (3/22 endpoints)
+- **Products** - Read-only (list, get) - *Full CRUD in v1.2.0*
+- **Benefits** - List only - *Full management in v1.2.0*
+- **Organizations** - Get only - *Update operations in v1.3.0*
 
-## License
+### 🔜 Coming Soon (11/22 endpoints)
+- **v1.2.0** - Discounts, License Keys, Files, Product CRUD
+- **v1.3.0** - OAuth2/OIDC, Customer Portal, Sessions
+- **v1.4.0** - Metrics, Events, Meters, Custom Fields
 
-MIT License — see [LICENSE.md](LICENSE.md)
+For detailed implementation status, see [docs/TASK.md](docs/TASK.md).  
+For development roadmap, see [docs/ROADMAP.md](docs/ROADMAP.md).
 
-## References
+## 🧪 Testing
 
-- Polar Documentation: https://docs.polar.sh
-- Polar Sandbox: https://sandbox.polar.sh
-- Polar API Reference: https://docs.polar.sh/api-reference
-- Polar: https://polar.sh
+### Test cards for Sandbox
 
+Stripe test cards for payment testing:
+
+| Card Number | Scenario |
+|-------------|----------|
+| `4242 4242 4242 4242` | Success |
+| `4000 0000 0000 0002` | Failure |
+| `4000 0025 0000 3155` | 3D Secure authentication |
+| `4000 0000 0000 9995` | Decline |
+
+### Running tests
+
+```powershell
+cd tests/PolarNet.Tests
+dotnet test --logger "console;verbosity=detailed"
+```
+
+## 🔧 Troubleshooting
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `401 Unauthorized` | Invalid/expired token | Verify token is valid for environment (sandbox/production) |
+| `404 Not Found` | Resource doesn't exist | Check IDs exist in your environment |
+| `422 Unprocessable Entity` | Invalid request | Verify required fields and data types |
+| `429 Too Many Requests` | Rate limit exceeded | Implement retry with exponential backoff |
+
+## ⚙️ Configuration
+
+### Authentication
+- **Organization Access Token (OAT)** - Server-side operations
+- **Customer Access Token** - Customer-specific operations (coming in v1.3.0)
+- **OAuth2/OIDC** - Third-party integrations (coming in v1.3.0)
+
+### Environment URLs
+- **Production**: `https://api.polar.sh`
+- **Sandbox**: `https://sandbox-api.polar.sh`
+
+### Rate Limits
+- 300 requests/minute per organization
+- 1 request/second for license key validation
+
+## 📚 Documentation
+
+- 📖 [Implementation Status](docs/TASK.md) - Current API coverage details
+- 🗺️ [Development Roadmap](docs/ROADMAP.md) - Future release plans
+- 📝 [Release Notes](docs/releases/) - Version history and changes
+- 🌐 [Polar API Reference](https://docs.polar.sh/api-reference) - Official API documentation
+- 🧪 [Polar Sandbox](https://sandbox.polar.sh) - Test environment
+
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development setup
+```powershell
+git clone https://github.com/lisa3907/polar.net.git
+cd polar.net
+dotnet restore
+dotnet build
+dotnet test
+```
 
 ## 👥 Team
 
-### **Core Development Team**
-- **SEONGAHN** - Lead Developer & Project Architect ([lisa@odinsoft.co.kr](mailto:lisa@odinsoft.co.kr))
-- **YUJIN** - Senior Developer & Exchange Integration Specialist ([yoojin@odinsoft.co.kr](mailto:yoojin@odinsoft.co.kr))
+### Core Development Team
+- **SEONGAHN LEE** - Lead Developer & Project Architect ([lisa@odinsoft.co.kr](mailto:lisa@odinsoft.co.kr))
+- **YUJIN** - Senior Developer & Integration Specialist ([yoojin@odinsoft.co.kr](mailto:yoojin@odinsoft.co.kr))
 - **SEJIN** - Software Developer & API Implementation ([saejin@odinsoft.co.kr](mailto:saejin@odinsoft.co.kr))
 
-## 📞 Support & Contact
+## 📞 Support
 
-- **🐛 Issues**: [GitHub Issues](https://github.com/lisa3907/polar.net/issues)
-- **📧 Email**: help@odinsoft.co.kr
+- 🐛 **Issues**: [GitHub Issues](https://github.com/lisa3907/polar.net/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/lisa3907/polar.net/discussions)
+- 📧 **Email**: help@odinsoft.co.kr
+- 📖 **Documentation**: [Wiki](https://github.com/lisa3907/polar.net/wiki)
 
 ## 📄 License
 
@@ -152,4 +291,12 @@ MIT License - see [LICENSE.md](LICENSE.md) for details.
 
 ---
 
-**Built with ❤️ by the ODINSOFT Team** | [⭐ Star us on GitHub](https://github.com/lisa3907/polar.net)
+<div align="center">
+
+**Built with ❤️ by the ODINSOFT Team**
+
+[⭐ Star us on GitHub](https://github.com/lisa3907/polar.net) | 
+[📦 NuGet Package](https://www.nuget.org/packages/PolarNet/) | 
+[🌐 Polar.sh](https://polar.sh)
+
+</div>
