@@ -38,22 +38,25 @@ try
     var products = await client.ListProductsAsync();
     Console.WriteLine($"Products: {products.Items.Count}");
 
-    // Get product by id if available
-    if (products.Items.Count > 0)
+    // Get a product and inspect its embedded prices
+    string? pidToUse = productId;
+    if (string.IsNullOrWhiteSpace(pidToUse) && products.Items.Count > 0)
     {
-        var pid = products.Items[0].Id;
-        var product = await client.GetProductAsync(pid);
-        Console.WriteLine($"First Product: {product.Name} ({product.Id})");
+        pidToUse = products.Items[0].Id;
     }
 
-    // List prices (optionally filtered by product)
-    var prices = await client.ListPricesAsync(productId);
-    Console.WriteLine($"Prices: {prices.Items.Count}");
-    if (prices.Items.Count > 0)
+    if (!string.IsNullOrWhiteSpace(pidToUse))
     {
-        var firstPriceId = prices.Items[0].Id;
-        var price = await client.GetPriceAsync(firstPriceId);
-        Console.WriteLine($"First Price: {price.Type} {price.PriceAmount} {price.PriceCurrency} (Id={price.Id})");
+        var product = await client.GetProductAsync(pidToUse);
+        Console.WriteLine($"Product: {product.Name} ({product.Id})");
+
+        var embeddedPrices = product.Prices ?? new();
+        Console.WriteLine($"Prices on product: {embeddedPrices.Count}");
+        if (embeddedPrices.Count > 0)
+        {
+            var p = embeddedPrices[0];
+            Console.WriteLine($"First Price: {p.Type} {p.PriceAmount} {p.PriceCurrency} (Id={p.Id}, Interval={p.RecurringInterval})");
+        }
     }
 
     // List orders

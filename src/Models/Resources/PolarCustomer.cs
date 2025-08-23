@@ -1,3 +1,6 @@
+// Enable nullable for this file
+#nullable enable
+
 using System;
 using System.Text.Json.Serialization;
 
@@ -21,7 +24,7 @@ namespace PolarNet.Models
 
         /// <summary>Customer name.</summary>
         [JsonPropertyName("name")]
-        public string Name { get; set; } = string.Empty;
+        public string? Name { get; set; }
 
         /// <summary>Owning organization id.</summary>
         [JsonPropertyName("organization_id")]
@@ -33,6 +36,6 @@ namespace PolarNet.Models
 
         /// <summary>Last modification timestamp (UTC).</summary>
         [JsonPropertyName("modified_at")]
-        public DateTime ModifiedAt { get; set; }
+        public DateTime? ModifiedAt { get; set; }
     }
 }

@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using PolarNet.Models;
+using System.Net;
 
 namespace PolarNet.Services
 {
@@ -49,7 +50,11 @@ namespace PolarNet.Services
 
             var baseUrl = options.BaseUrl.TrimEnd('/');
 
-            _http = new HttpClient { BaseAddress = new Uri(baseUrl) };
+            var handler = new HttpClientHandler
+            {
+                AllowAutoRedirect = false // preserve Authorization across redirects by handling them manually
+            };
+            _http = new HttpClient(handler) { BaseAddress = new Uri(baseUrl) };
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", options.AccessToken);
             _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
@@ -71,7 +76,16 @@ namespace PolarNet.Services
 
             var baseUrl = options.BaseUrl.TrimEnd('/');
 
-            _http = handler is null ? new HttpClient() : new HttpClient(handler);
+            // Always disable auto-redirect to avoid losing Authorization on redirects
+            if (handler is null)
+            {
+                handler = new HttpClientHandler { AllowAutoRedirect = false };
+            }
+            else if (handler is HttpClientHandler h)
+            {
+                h.AllowAutoRedirect = false;
+            }
+            _http = new HttpClient(handler);
             _http.BaseAddress = new Uri(baseUrl);
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", options.AccessToken);
             _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -79,6 +93,57 @@ namespace PolarNet.Services
             _organizationId = options.OrganizationId;
             _defaultProductId = options.DefaultProductId;
             _defaultPriceId = options.DefaultPriceId;
+        }
+
+        /// <summary>
+        /// Sends an HTTP request and manually follows redirects while preserving Authorization headers.
+        /// </summary>
+        private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, HttpContent? content = null)
+        {
+            const int maxRedirects = 5;
+            int redirects = 0;
+            string currentUrl = url;
+
+            while (true)
+            {
+                using var req = new HttpRequestMessage(method, currentUrl) { Content = content };
+                var resp = await _http.SendAsync(req);
+
+                if (resp.StatusCode is HttpStatusCode.MovedPermanently // 301
+                    or HttpStatusCode.Found                          // 302
+                    or HttpStatusCode.SeeOther                       // 303
+                    or HttpStatusCode.TemporaryRedirect              // 307
+                    || (int)resp.StatusCode == 308)                  // 308 Permanent Redirect
+                {
+                    if (redirects++ >= maxRedirects)
+                    {
+                        return resp; // give up; let caller handle
+                    }
+
+                    if (resp.Headers.Location is null)
+                    {
+                        return resp; // no location to follow
+                    }
+
+                    // Prepare for next loop; clone content for non-GET methods
+                    currentUrl = resp.Headers.Location.IsAbsoluteUri
+                        ? resp.Headers.Location.ToString()
+                        : new Uri(_http.BaseAddress!, resp.Headers.Location).ToString();
+
+                    // For POST/PUT/PATCH with StringContent, recreate content to allow resend
+                    if (content is StringContent sc && method != HttpMethod.Get && method != HttpMethod.Head)
+                    {
+                        var payload = await sc.ReadAsStringAsync();
+                        content = new StringContent(payload, Encoding.UTF8, sc.Headers.ContentType?.MediaType ?? "application/json");
+                    }
+
+                    // Dispose previous response and continue
+                    resp.Dispose();
+                    continue;
+                }
+
+                return resp;
+            }
         }
 
         // -------------------- Organization --------------------
@@ -92,7 +157,7 @@ namespace PolarNet.Services
         public async Task<PolarOrganization> GetOrganizationAsync()
         {
             var orgId = _organizationId ?? throw new ArgumentException("OrganizationId must be provided in options");
-            var response = await _http.GetAsync($"/v1/organizations/{orgId}");
+            var response = await SendAsync(HttpMethod.Get, $"/v1/organizations/{orgId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarOrganization>(json)
@@ -111,7 +176,7 @@ namespace PolarNet.Services
         public async Task<PolarProduct> GetProductAsync(string? productId = null)
         {
             var pid = productId ?? _defaultProductId ?? throw new ArgumentException("ProductId must be supplied or DefaultProductId set in options");
-            var response = await _http.GetAsync($"/v1/products/{pid}");
+            var response = await SendAsync(HttpMethod.Get, $"/v1/products/{pid}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarProduct>(json)
@@ -125,10 +190,10 @@ namespace PolarNet.Services
         /// <exception cref="ArgumentException">Thrown if <c>OrganizationId</c> is not configured in options.</exception>
         /// <exception cref="HttpRequestException">Thrown if the HTTP request fails.</exception>
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
-        public async Task<PolarListResponse<PolarProduct>> ListProductsAsync()
+        public async Task<PolarListResponse<PolarProduct>> ListProductsAsync(int page = 1, int limit = 10)
         {
-            var orgId = _organizationId ?? throw new ArgumentException("OrganizationId must be provided in options");
-            var response = await _http.GetAsync($"/v1/products?organization_id={orgId}");
+            // Rely on token's organization context; include sensible default pagination.
+            var response = await SendAsync(HttpMethod.Get, $"/v1/products?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarProduct>>(json)
@@ -145,7 +210,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarPrice> GetPriceAsync(string priceId)
         {
-            var response = await _http.GetAsync($"/v1/prices/{priceId}");
+            var response = await SendAsync(HttpMethod.Get, $"/v1/prices/{priceId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarPrice>(json)
@@ -153,23 +218,17 @@ namespace PolarNet.Services
         }
 
         /// <summary>
-        /// Lists prices for the configured organization, optionally filtered by product.
+        /// Lists prices for a product.
         /// </summary>
-        /// <param name="productId">Optional product id to filter prices for a specific product.</param>
+        /// <param name="productId">Product id to list prices for.</param>
         /// <returns>Paged list of prices.</returns>
-        /// <exception cref="ArgumentException">Thrown if <c>OrganizationId</c> is not configured.</exception>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="productId"/> is null or whitespace.</exception>
         /// <exception cref="HttpRequestException">Thrown if the HTTP request fails.</exception>
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
-        public async Task<PolarListResponse<PolarPrice>> ListPricesAsync(string? productId = null)
+        public async Task<PolarListResponse<PolarPrice>> ListPricesAsync(string productId, int page = 1, int limit = 10)
         {
-            var orgId = _organizationId ?? throw new ArgumentException("OrganizationId must be provided in options");
-            var url = new StringBuilder($"/v1/prices?organization_id={orgId}");
-            if (!string.IsNullOrWhiteSpace(productId))
-            {
-                url.Append($"&product_id={productId}");
-            }
-
-            var response = await _http.GetAsync(url.ToString());
+            if (string.IsNullOrWhiteSpace(productId)) throw new ArgumentException("productId is required", nameof(productId));
+            var response = await SendAsync(HttpMethod.Get, $"/v1/products/{productId}/prices?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarPrice>>(json)
@@ -178,7 +237,7 @@ namespace PolarNet.Services
 
         // -------------------- Customers --------------------
         /// <summary>
-        /// Creates a new customer in the configured organization.
+    /// Creates a new customer in the configured organization.
         /// </summary>
         /// <param name="email">Customer email. Required by the API.</param>
         /// <param name="name">Optional display name. Defaults to the local part of the email.</param>
@@ -186,19 +245,43 @@ namespace PolarNet.Services
         /// <exception cref="ArgumentException">Thrown if <c>OrganizationId</c> is not configured.</exception>
         /// <exception cref="Exception">Thrown with response body when the API returns a non-success status code.</exception>
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
+    /// <remarks>API doc: https://docs.polar.sh/api-reference/customers/create</remarks>
         public async Task<PolarCustomer> CreateCustomerAsync(string email, string? name = null)
         {
-            var orgId = _organizationId ?? throw new ArgumentException("OrganizationId must be provided in options");
             var request = new CreateCustomerRequest
             {
                 Email = email,
-                Name = string.IsNullOrWhiteSpace(name) ? email.Split('@')[0] : name,
-                OrganizationId = orgId
+                Name = string.IsNullOrWhiteSpace(name) ? (email?.Split('@')[0] ?? "") : name!,
+                // Do not send organization_id when using an organization token.
+                OrganizationId = null
             };
 
             var json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await _http.PostAsync("/v1/customers", content);
+            var response = await SendAsync(HttpMethod.Post, "/v1/customers", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Failed to create customer: {response.StatusCode} - {error}");
+            }
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<PolarCustomer>(responseContent)
+                   ?? throw new InvalidOperationException("Failed to deserialize PolarCustomer");
+        }
+
+        /// <summary>
+        /// Advanced overload to create a customer with full payload (metadata, external_id, billing_address, tax_id, etc.).
+        /// </summary>
+        /// <param name="request">A fully-populated create request. When using an org token, leave OrganizationId null.</param>
+        /// <returns>The created <see cref="PolarCustomer"/>.</returns>
+        /// <remarks>API doc: https://docs.polar.sh/api-reference/customers/create</remarks>
+        public async Task<PolarCustomer> CreateCustomerAsync(CreateCustomerRequest request)
+        {
+            var json = JsonSerializer.Serialize(request);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await SendAsync(HttpMethod.Post, "/v1/customers", content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -220,7 +303,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarCustomerState> GetCustomerStateAsync(string customerId)
         {
-            var response = await _http.GetAsync($"/v1/customers/{customerId}/state");
+            var response = await SendAsync(HttpMethod.Get, $"/v1/customers/{customerId}/state");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarCustomerState>(json)
@@ -234,10 +317,9 @@ namespace PolarNet.Services
         /// <exception cref="ArgumentException">Thrown if <c>OrganizationId</c> is not configured.</exception>
         /// <exception cref="HttpRequestException">Thrown if the HTTP request fails.</exception>
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
-        public async Task<PolarListResponse<PolarCustomer>> ListCustomersAsync()
+        public async Task<PolarListResponse<PolarCustomer>> ListCustomersAsync(int page = 1, int limit = 10)
         {
-            var orgId = _organizationId ?? throw new ArgumentException("OrganizationId must be provided in options");
-            var response = await _http.GetAsync($"/v1/customers?organization_id={orgId}");
+            var response = await SendAsync(HttpMethod.Get, $"/v1/customers?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarCustomer>>(json)
@@ -253,11 +335,23 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarCustomer> GetCustomerAsync(string customerId)
         {
-            var response = await _http.GetAsync($"/v1/customers/{customerId}");
+            var response = await SendAsync(HttpMethod.Get, $"/v1/customers/{customerId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarCustomer>(json)
                    ?? throw new InvalidOperationException("Failed to deserialize PolarCustomer");
+        }
+
+        /// <summary>
+        /// Deletes a customer by id.
+        /// </summary>
+        /// <param name="customerId">Customer id.</param>
+        /// <returns><c>true</c> when the API responds with a success (2xx) status code; otherwise <c>false</c>.</returns>
+        /// <remarks>API doc: https://docs.polar.sh/api-reference/customers/delete</remarks>
+        public async Task<bool> DeleteCustomerAsync(string customerId)
+        {
+            var response = await SendAsync(HttpMethod.Delete, $"/v1/customers/{customerId}");
+            return response.IsSuccessStatusCode;
         }
 
         // -------------------- Subscriptions --------------------
@@ -273,10 +367,26 @@ namespace PolarNet.Services
         public async Task<PolarSubscription> CreateSubscriptionAsync(string customerId, string? priceId = null)
         {
             var pid = priceId ?? _defaultPriceId ?? throw new ArgumentException("PriceId must be supplied or DefaultPriceId set in options");
-            var request = new CreateSubscriptionRequest { CustomerId = customerId, ProductPriceId = pid };
+            // Try POST /v1/customers/{customerId}/subscriptions with body { product_price_id }
+            var request = new CreateSubscriptionRequest { ProductPriceId = pid };
             var json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await _http.PostAsync("/v1/subscriptions", content);
+            var response = await SendAsync(HttpMethod.Post, $"/v1/customers/{customerId}/subscriptions", content);
+
+            // If not found or method not allowed, fallback to POST /v1/subscriptions with { customer_id, product_price_id }
+            if (!response.IsSuccessStatusCode &&
+                (response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.MethodNotAllowed))
+            {
+                response.Dispose();
+                var altPayload = new
+                {
+                    customer_id = customerId,
+                    product_price_id = pid
+                };
+                var altJson = JsonSerializer.Serialize(altPayload);
+                var altContent = new StringContent(altJson, Encoding.UTF8, "application/json");
+                response = await SendAsync(HttpMethod.Post, "/v1/subscriptions", altContent);
+            }
 
             if (!response.IsSuccessStatusCode)
             {
@@ -296,10 +406,9 @@ namespace PolarNet.Services
         /// <exception cref="ArgumentException">Thrown if <c>OrganizationId</c> is not configured.</exception>
         /// <exception cref="HttpRequestException">Thrown if the HTTP request fails.</exception>
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
-        public async Task<PolarListResponse<PolarSubscription>> ListSubscriptionsAsync()
+        public async Task<PolarListResponse<PolarSubscription>> ListSubscriptionsAsync(int page = 1, int limit = 10)
         {
-            var orgId = _organizationId ?? throw new ArgumentException("OrganizationId must be provided in options");
-            var response = await _http.GetAsync($"/v1/subscriptions?organization_id={orgId}");
+            var response = await SendAsync(HttpMethod.Get, $"/v1/subscriptions?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarSubscription>>(json)
@@ -315,7 +424,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarSubscription> GetSubscriptionAsync(string subscriptionId)
         {
-            var response = await _http.GetAsync($"/v1/subscriptions/{subscriptionId}");
+            var response = await SendAsync(HttpMethod.Get, $"/v1/subscriptions/{subscriptionId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarSubscription>(json)
@@ -329,7 +438,33 @@ namespace PolarNet.Services
         /// <returns><c>true</c> when the API responds with a success (2xx) status code; otherwise <c>false</c>.</returns>
         public async Task<bool> CancelSubscriptionAsync(string subscriptionId)
         {
-            var response = await _http.DeleteAsync($"/v1/subscriptions/{subscriptionId}");
+            var response = await SendAsync(HttpMethod.Delete, $"/v1/subscriptions/{subscriptionId}");
+            return response.IsSuccessStatusCode;
+        }
+
+        /// <summary>
+        /// Revokes a subscription immediately, removing access/benefits.
+        /// </summary>
+        /// <param name="subscriptionId">Subscription id.</param>
+        /// <returns><c>true</c> when the API responds with a success (2xx) status code; otherwise <c>false</c>.</returns>
+        /// <remarks>API doc: https://docs.polar.sh/api-reference/subscriptions/revoke</remarks>
+        public async Task<bool> RevokeSubscriptionAsync(string subscriptionId)
+        {
+            // Primary path: POST /v1/subscriptions/{id}/revoke with empty body
+            var content = new StringContent("{}", Encoding.UTF8, "application/json");
+            var response = await SendAsync(HttpMethod.Post, $"/v1/subscriptions/{subscriptionId}/revoke", content);
+
+            // Fallback path when not found/method not allowed: POST /v1/subscriptions/revoke { subscription_id }
+            if (!response.IsSuccessStatusCode &&
+                (response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.MethodNotAllowed))
+            {
+                response.Dispose();
+                var payload = new { subscription_id = subscriptionId };
+                var json = JsonSerializer.Serialize(payload);
+                var altContent = new StringContent(json, Encoding.UTF8, "application/json");
+                response = await SendAsync(HttpMethod.Post, "/v1/subscriptions/revoke", altContent);
+            }
+
             return response.IsSuccessStatusCode;
         }
 
@@ -360,7 +495,7 @@ namespace PolarNet.Services
 
             var json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await _http.PostAsync("/v1/checkouts/custom", content);
+            var response = await SendAsync(HttpMethod.Post, "/v1/checkouts", content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -382,7 +517,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarCheckout> GetCheckoutAsync(string checkoutId)
         {
-            var response = await _http.GetAsync($"/v1/checkouts/custom/{checkoutId}");
+            var response = await SendAsync(HttpMethod.Get, $"/v1/checkouts/{checkoutId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarCheckout>(json)
@@ -397,10 +532,9 @@ namespace PolarNet.Services
         /// <exception cref="ArgumentException">Thrown if <c>OrganizationId</c> is not configured.</exception>
         /// <exception cref="HttpRequestException">Thrown if the HTTP request fails.</exception>
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
-        public async Task<PolarListResponse<PolarOrder>> ListOrdersAsync()
+        public async Task<PolarListResponse<PolarOrder>> ListOrdersAsync(int page = 1, int limit = 10)
         {
-            var orgId = _organizationId ?? throw new ArgumentException("OrganizationId must be provided in options");
-            var response = await _http.GetAsync($"/v1/orders?organization_id={orgId}");
+            var response = await SendAsync(HttpMethod.Get, $"/v1/orders?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarOrder>>(json)
@@ -416,7 +550,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarOrder> GetOrderAsync(string orderId)
         {
-            var response = await _http.GetAsync($"/v1/orders/{orderId}");
+            var response = await SendAsync(HttpMethod.Get, $"/v1/orders/{orderId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarOrder>(json)
@@ -430,10 +564,9 @@ namespace PolarNet.Services
         /// <exception cref="ArgumentException">Thrown if <c>OrganizationId</c> is not configured.</exception>
         /// <exception cref="HttpRequestException">Thrown if the HTTP request fails.</exception>
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
-        public async Task<PolarListResponse<PolarBenefit>> ListBenefitsAsync()
+        public async Task<PolarListResponse<PolarBenefit>> ListBenefitsAsync(int page = 1, int limit = 10)
         {
-            var orgId = _organizationId ?? throw new ArgumentException("OrganizationId must be provided in options");
-            var response = await _http.GetAsync($"/v1/benefits?organization_id={orgId}");
+            var response = await SendAsync(HttpMethod.Get, $"/v1/benefits?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarBenefit>>(json)

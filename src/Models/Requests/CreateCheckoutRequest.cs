@@ -7,7 +7,7 @@ namespace PolarNet.Models
     /// Request payload for creating a custom checkout session.
     /// </summary>
     /// <remarks>
-    /// Sent to POST /v1/checkouts/custom.
+    /// Sent to POST /v1/checkouts.
     /// </remarks>
     public class CreateCheckoutRequest
     {
