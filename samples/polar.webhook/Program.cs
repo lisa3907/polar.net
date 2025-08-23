@@ -6,13 +6,17 @@ using Microsoft.AspNetCore.Mvc;
 var builder = WebApplication.CreateBuilder(args);
 
 // Use appsettings.Development.json in DEBUG mode
-var configBuilder = new ConfigurationBuilder()
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
+var config = new ConfigurationBuilder()
+        .SetBasePath(Directory.GetCurrentDirectory())
 #if DEBUG
-configBuilder = configBuilder.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
+        .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
+#else
+        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
 #endif
-builder.Configuration.AddConfiguration(configBuilder.Build());
+        .Build();
+
+builder.Configuration.AddConfiguration(config);
 
 // Add services to the container
 builder.Services.AddControllersWithViews();

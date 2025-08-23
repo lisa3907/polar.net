@@ -93,11 +93,14 @@ var org = await client.GetOrganizationAsync();
 - Organization: GET `/v1/organizations/{organization_id}`
 - Products: GET `/v1/products?organization_id={org}` · GET `/v1/products/{id}`
 - Prices: GET `/v1/prices?organization_id={org}[&product_id={pid}]` · GET `/v1/prices/{id}`
-- Customers: POST `/v1/customers` · GET `/v1/customers?organization_id={org}` · GET `/v1/customers/{id}` · GET `/v1/customers/{id}/state`
-- Subscriptions: POST `/v1/subscriptions` · GET `/v1/subscriptions?organization_id={org}` · GET `/v1/subscriptions/{id}` · DELETE `/v1/subscriptions/{id}`
+- Customers: POST `/v1/customers` · GET `/v1/customers?organization_id={org}` · GET `/v1/customers/{id}` · GET `/v1/customers/{id}/state` · DELETE `/v1/customers/{id}`
+- Subscriptions: POST `/v1/subscriptions` · GET `/v1/subscriptions?organization_id={org}` · GET `/v1/subscriptions/{id}` · DELETE `/v1/subscriptions/{id}` · POST `/v1/subscriptions/{id}/revoke`
 - Checkouts (custom): POST `/v1/checkouts/custom` · GET `/v1/checkouts/custom/{id}`
 - Orders: GET `/v1/orders?organization_id={org}` · GET `/v1/orders/{id}`
 - Benefits: GET `/v1/benefits?organization_id={org}`
+- **Payments** (NEW): GET `/v1/payments?organization_id={org}` · GET `/v1/payments/{id}` · GET `/v1/payments?order_id={oid}` · GET `/v1/payments?customer_id={cid}`
+- **Refunds** (NEW): POST `/v1/refunds` · GET `/v1/refunds?organization_id={org}` · GET `/v1/refunds/{id}`
+- **Webhook Endpoints** (NEW): POST `/v1/webhooks/endpoints` · GET `/v1/webhooks/endpoints` · GET `/v1/webhooks/endpoints/{id}` · PATCH `/v1/webhooks/endpoints/{id}` · DELETE `/v1/webhooks/endpoints/{id}` · POST `/v1/webhooks/endpoints/{id}/test`
 
 ## Test card info
 

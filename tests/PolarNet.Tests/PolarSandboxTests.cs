@@ -20,19 +20,20 @@ namespace PolarNet.Tests
         public string? OrganizationId { get; private set; }
         public string? ProductId { get; private set; }
         public string? PriceId { get; private set; }
-    public string? WebhookBaseUrl { get; private set; }
+        public string? WebhookBaseUrl { get; private set; }
 
         private IConfigurationRoot? _config;
 
         public Task InitializeAsync()
         {
-            var configBuilder = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", optional: true);
+            _config = new ConfigurationBuilder()
 #if DEBUG
-            configBuilder = configBuilder.AddJsonFile("appsettings.Development.json", optional: true);
+                .AddJsonFile("appsettings.Development.json", optional: true)
+#else
+                .AddJsonFile("appsettings.json", optional: false)
 #endif
-            configBuilder = configBuilder.AddEnvironmentVariables(prefix: "POLAR_TEST_");
-            _config = configBuilder.Build();
+                .AddEnvironmentVariables(prefix: "POLAR_TEST_")
+                .Build();
 
             var section = _config.GetSection("PolarSettings");
             var accessToken = section["AccessToken"] ?? string.Empty;
@@ -154,7 +155,7 @@ namespace PolarNet.Tests
 
         [SkippableFact]
         [Trait("Category", "Integration")]
-    public async Task Customers_Create_Get_List_CreateSubscription_Revoke_And_Delete_Works()
+        public async Task Customers_Create_Get_List_CreateSubscription_Revoke_And_Delete_Works()
         {
             var client = GetClientOrSkip();
 
@@ -247,6 +248,55 @@ namespace PolarNet.Tests
             // Benefits list
             var benefits = await client.ListBenefitsAsync();
             Assert.NotNull(benefits);
+
+            // ========== NEW: Payment API Tests ==========
+            var payments = await client.ListPaymentsAsync();
+            Assert.NotNull(payments);
+            Assert.NotNull(payments.Items);
+
+            if (payments.Items.Count > 0)
+            {
+                var firstPayment = payments.Items[0];
+                var payment = await client.GetPaymentAsync(firstPayment.Id);
+                Assert.NotNull(payment);
+                Assert.Equal(firstPayment.Id, payment.Id);
+
+                // Test filtering by order
+                if (!string.IsNullOrEmpty(payment.OrderId))
+                {
+                    var orderPayments = await client.ListPaymentsByOrderAsync(payment.OrderId);
+                    Assert.NotNull(orderPayments);
+                    Assert.Contains(orderPayments.Items, p => p.Id == payment.Id);
+                }
+            }
+
+            // ========== NEW: Refund API Tests ==========
+            var refunds = await client.ListRefundsAsync();
+            Assert.NotNull(refunds);
+            Assert.NotNull(refunds.Items);
+
+            if (refunds.Items.Count > 0)
+            {
+                var firstRefund = refunds.Items[0];
+                var refund = await client.GetRefundAsync(firstRefund.Id);
+                Assert.NotNull(refund);
+                Assert.Equal(firstRefund.Id, refund.Id);
+            }
+
+            // ========== NEW: Webhook Management API Tests ==========
+            var webhooks = await client.ListWebhookEndpointsAsync();
+            Assert.NotNull(webhooks);
+            Assert.NotNull(webhooks.Items);
+
+            if (webhooks.Items.Count > 0)
+            {
+                var firstWebhook = webhooks.Items[0];
+                var webhook = await client.GetWebhookEndpointAsync(firstWebhook.Id);
+                Assert.NotNull(webhook);
+                Assert.Equal(firstWebhook.Id, webhook.Id);
+                Assert.NotNull(webhook.Url);
+                Assert.NotNull(webhook.Events);
+            }
         }
 
         [SkippableFact]
@@ -260,6 +310,113 @@ namespace PolarNet.Tests
             var org = await client.GetOrganizationAsync();
             Assert.NotNull(org);
             Assert.False(string.IsNullOrWhiteSpace(org.Id));
+        }
+
+        [SkippableFact]
+        [Trait("Category", "Integration")]
+        public async Task Payments_List_And_Get_Work()
+        {
+            var client = GetClientOrSkip();
+
+            var payments = await client.ListPaymentsAsync(page: 1, limit: 10);
+            Assert.NotNull(payments);
+            Assert.NotNull(payments.Items);
+            Assert.True(payments.Pagination.TotalCount >= 0);
+
+            if (payments.Items.Count > 0)
+            {
+                var firstPayment = payments.Items[0];
+                var payment = await client.GetPaymentAsync(firstPayment.Id);
+                Assert.NotNull(payment);
+                Assert.Equal(firstPayment.Id, payment.Id);
+                Assert.False(string.IsNullOrWhiteSpace(payment.Status));
+            }
+        }
+
+        [SkippableFact]
+        [Trait("Category", "Integration")]
+        public async Task Refunds_List_And_Get_Work()
+        {
+            var client = GetClientOrSkip();
+
+            var refunds = await client.ListRefundsAsync(page: 1, limit: 10);
+            Assert.NotNull(refunds);
+            Assert.NotNull(refunds.Items);
+            Assert.True(refunds.Pagination.TotalCount >= 0);
+
+            if (refunds.Items.Count > 0)
+            {
+                var firstRefund = refunds.Items[0];
+                var refund = await client.GetRefundAsync(firstRefund.Id);
+                Assert.NotNull(refund);
+                Assert.Equal(firstRefund.Id, refund.Id);
+                Assert.False(string.IsNullOrWhiteSpace(refund.Status));
+                Assert.False(string.IsNullOrWhiteSpace(refund.Reason));
+            }
+        }
+
+        [SkippableFact]
+        [Trait("Category", "Integration")]
+        public async Task WebhookEndpoints_List_And_Get_Work()
+        {
+            var client = GetClientOrSkip();
+
+            var webhooks = await client.ListWebhookEndpointsAsync(page: 1, limit: 10);
+            Assert.NotNull(webhooks);
+            Assert.NotNull(webhooks.Items);
+            Assert.True(webhooks.Pagination.TotalCount >= 0);
+
+            if (webhooks.Items.Count > 0)
+            {
+                var firstWebhook = webhooks.Items[0];
+                var webhook = await client.GetWebhookEndpointAsync(firstWebhook.Id);
+                Assert.NotNull(webhook);
+                Assert.Equal(firstWebhook.Id, webhook.Id);
+                Assert.False(string.IsNullOrWhiteSpace(webhook.Url));
+                Assert.NotNull(webhook.Events);
+                Assert.True(webhook.Events.Count > 0);
+            }
+        }
+
+        [SkippableFact]
+        [Trait("Category", "Integration")]
+        public async Task WebhookEndpoints_Create_Update_Delete_Work()
+        {
+            var client = GetClientOrSkip();
+
+            // Create a test webhook endpoint
+            var testUrl = $"https://webhook.site/{Guid.NewGuid():N}";
+            var events = new List<string> { "order.created", "subscription.created" };
+
+            var created = await client.CreateWebhookEndpointAsync(testUrl, events, "test-secret");
+            Assert.NotNull(created);
+            Assert.False(string.IsNullOrWhiteSpace(created.Id));
+            Assert.Equal(testUrl, created.Url);
+            Assert.Equal(2, created.Events.Count);
+
+            try
+            {
+                // Update the webhook endpoint
+                var updateRequest = new PolarNet.Models.Resources.UpdateWebhookEndpointRequest
+                {
+                    Events = new List<string> { "order.created", "subscription.created", "payment.succeeded" }
+                };
+
+                var updated = await client.UpdateWebhookEndpointAsync(created.Id, updateRequest);
+                Assert.NotNull(updated);
+                Assert.Equal(3, updated.Events.Count);
+
+                // Test the webhook endpoint
+                var testResult = await client.TestWebhookEndpointAsync(created.Id);
+                // Note: Test might fail if the URL is not reachable, but the method should work
+                // testResult is a bool (value type), no need for null check
+            }
+            finally
+            {
+                // Clean up: Delete the webhook endpoint
+                var deleted = await client.DeleteWebhookEndpointAsync(created.Id);
+                Assert.True(deleted);
+            }
         }
 
         [SkippableFact]
