@@ -120,7 +120,7 @@ namespace PolarSample.Demos
             Console.WriteLine($"Amount: {order.Amount} {order.Currency}");
             // Note: TaxAmount field is not available in the current model
             Console.WriteLine($"Created: {order.CreatedAt:yyyy-MM-dd HH:mm:ss}");
-            Console.WriteLine($"Modified: {order.ModifiedAt:yyyy-MM-dd HH:mm:ss}");
+            // Note: ModifiedAt field is not available in the current model
             
             // Note: UserId field is not available in the current model
             
@@ -129,9 +129,9 @@ namespace PolarSample.Demos
                 Console.WriteLine($"Product ID: {order.ProductId}");
             }
             
-            if (!string.IsNullOrEmpty(order.PriceId))
+            if (!string.IsNullOrEmpty(order.ProductPriceId))
             {
-                Console.WriteLine($"Price ID: {order.PriceId}");
+                Console.WriteLine($"Product Price ID: {order.ProductPriceId}");
             }
             
             if (!string.IsNullOrEmpty(order.SubscriptionId))
@@ -139,10 +139,7 @@ namespace PolarSample.Demos
                 Console.WriteLine($"Subscription ID: {order.SubscriptionId}");
             }
             
-            if (!string.IsNullOrEmpty(order.CheckoutId))
-            {
-                Console.WriteLine($"Checkout ID: {order.CheckoutId}");
-            }
+            // Note: CheckoutId field is not available in the current model
             
             // Note: BillingAddress field is not available in the current model
         }
@@ -184,7 +181,7 @@ namespace PolarSample.Demos
             Console.WriteLine($"Status: {checkout.Status}");
             Console.WriteLine($"Client Secret: {checkout.ClientSecret}");
             Console.WriteLine($"URL: {checkout.Url}");
-            Console.WriteLine($"Expires: {checkout.ExpiresAt:yyyy-MM-dd HH:mm:ss}");
+            // Note: ExpiresAt field is not available in the current model
             
             Console.WriteLine("\n⚠️ Visit the URL above to complete the checkout process.");
         }
@@ -209,14 +206,21 @@ namespace PolarSample.Demos
             Console.WriteLine($"Status: {checkout.Status}");
             Console.WriteLine($"URL: {checkout.Url}");
             Console.WriteLine($"Client Secret: {checkout.ClientSecret}");
-            Console.WriteLine($"Created: {checkout.CreatedAt:yyyy-MM-dd HH:mm:ss}");
-            Console.WriteLine($"Expires: {checkout.ExpiresAt:yyyy-MM-dd HH:mm:ss}");
+            // Note: CreatedAt, ExpiresAt fields are not available in the current model
             
-            // Note: SuccessUrl, CustomerEmail, PriceId fields are not available in the current model
+            if (!string.IsNullOrEmpty(checkout.SuccessUrl))
+            {
+                Console.WriteLine($"Success URL: {checkout.SuccessUrl}");
+            }
             
             if (!string.IsNullOrEmpty(checkout.ProductId))
             {
                 Console.WriteLine($"Product ID: {checkout.ProductId}");
+            }
+            
+            if (!string.IsNullOrEmpty(checkout.ProductPriceId))
+            {
+                Console.WriteLine($"Product Price ID: {checkout.ProductPriceId}");
             }
         }
     }
