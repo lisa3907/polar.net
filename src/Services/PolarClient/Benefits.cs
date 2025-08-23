@@ -3,7 +3,6 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using PolarNet.Models;
-using PolarNet.Models.Resources;
 
 namespace PolarNet.Services
 {

@@ -3,96 +3,29 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 using PolarNet.Models;
 using PolarNet.Services;
+using PolarNet.Tests.Base;
 using Xunit;
+using Xunit.Abstractions;
 
-namespace PolarNet.Tests
+namespace PolarNet.Tests.Integration
 {
     /// <summary>
-    /// Loads sandbox configuration from tests/appsettings.json and constructs a PolarClient for integration tests.
-    /// If any required config is missing, tests will be skipped with a clear message.
+    /// Integration tests for Polar API using sandbox environment.
     /// </summary>
-    public sealed class PolarSandboxFixture : IAsyncLifetime
-    {
-        public PolarClient? Client { get; private set; }
-        public string? OrganizationId { get; private set; }
-        public string? ProductId { get; private set; }
-        public string? PriceId { get; private set; }
-        public string? WebhookBaseUrl { get; private set; }
-
-        private IConfigurationRoot? _config;
-
-        public Task InitializeAsync()
-        {
-            _config = new ConfigurationBuilder()
-#if DEBUG
-                .AddJsonFile("appsettings.Development.json", optional: true)
-#else
-                .AddJsonFile("appsettings.json", optional: false)
-#endif
-                .AddEnvironmentVariables(prefix: "POLAR_TEST_")
-                .Build();
-
-            var section = _config.GetSection("PolarSettings");
-            var accessToken = section["AccessToken"] ?? string.Empty;
-            var useSandbox = string.Equals(section["UseSandbox"], "true", StringComparison.OrdinalIgnoreCase);
-            var baseUrl = (useSandbox ? section["SandboxApiUrl"] : section["ProductionApiUrl"]) ?? string.Empty;
-            OrganizationId = section["OrganizationId"];
-            ProductId = section["ProductId"];
-            PriceId = section["PriceId"];
-            WebhookBaseUrl = section["WebhookBaseUrl"];
-
-            if (IsPlaceholder(accessToken) || string.IsNullOrWhiteSpace(baseUrl))
-            {
-                // Leave Client = null; tests will skip with message.
-                return Task.CompletedTask;
-            }
-
-            var options = new PolarClientOptions
-            {
-                AccessToken = accessToken,
-                BaseUrl = baseUrl,
-                OrganizationId = !IsPlaceholder(OrganizationId) ? OrganizationId : null,
-                DefaultProductId = !IsPlaceholder(ProductId) ? ProductId : null,
-                DefaultPriceId = !IsPlaceholder(PriceId) ? PriceId : null
-            };
-
-            Client = new PolarClient(options);
-            return Task.CompletedTask;
-        }
-
-        public Task DisposeAsync()
-        {
-            Client?.Dispose();
-            return Task.CompletedTask;
-        }
-
-        internal static bool IsPlaceholder(string? value)
-            => string.IsNullOrWhiteSpace(value) || value!.StartsWith("<", StringComparison.Ordinal);
-    }
-
-    [CollectionDefinition(Name)]
-    public class PolarSandboxCollection : ICollectionFixture<PolarSandboxFixture>
-    {
-        public const string Name = "PolarSandboxCollection";
-    }
-
     [Collection(PolarSandboxCollection.Name)]
-    public class PolarSandboxTests
+    public class PolarSandboxTests : TestBase
     {
-        private readonly PolarSandboxFixture _fx;
-
-        public PolarSandboxTests(PolarSandboxFixture fx)
+        public PolarSandboxTests(PolarSandboxFixture fixture, ITestOutputHelper output) 
+            : base(fixture, output)
         {
-            _fx = fx;
         }
 
         private PolarClient GetClientOrSkip()
         {
-            Skip.If(_fx.Client is null, "Polar sandbox credentials/base URL not configured. Fill PolarSettings in tests/appsettings.json.");
-            return _fx.Client!;
+            Skip.If(Client is null, "Polar sandbox credentials/base URL not configured. Fill PolarSettings in tests/appsettings.json.");
+            return Client!;
         }
 
         [SkippableFact]
@@ -109,18 +42,18 @@ namespace PolarNet.Tests
             Assert.NotNull(products.Pagination);
 
             // Prices are embedded in the Product payload in sandbox; validate via product.Prices
-            if (!PolarSandboxFixture.IsPlaceholder(_fx.ProductId))
+            if (!PolarSandboxFixture.IsPlaceholder(ProductId))
             {
-                var product = await client.GetProductAsync(_fx.ProductId);
+                var product = await client.GetProductAsync(ProductId);
                 Assert.NotNull(product);
                 Assert.False(string.IsNullOrWhiteSpace(product.Id));
                 Assert.NotNull(product.Prices);
 
                 // If a PriceId is configured, ensure it exists on this product
-                if (!PolarSandboxFixture.IsPlaceholder(_fx.PriceId))
+                if (!PolarSandboxFixture.IsPlaceholder(PriceId))
                 {
-                    var hasPrice = product.Prices.Any(p => string.Equals(p.Id, _fx.PriceId, StringComparison.OrdinalIgnoreCase));
-                    Assert.True(hasPrice, $"Configured PriceId {_fx.PriceId} not found on product {product.Id}.");
+                    var hasPrice = product.Prices.Any(p => string.Equals(p.Id, PriceId, StringComparison.OrdinalIgnoreCase));
+                    Assert.True(hasPrice, $"Configured PriceId {PriceId} not found on product {product.Id}.");
                 }
             }
         }
@@ -176,11 +109,11 @@ namespace PolarNet.Tests
 
             // Try to create a subscription for this customer if PriceId is configured
             PolarSubscription? createdSub = null;
-            if (!PolarSandboxFixture.IsPlaceholder(_fx.PriceId))
+            if (!PolarSandboxFixture.IsPlaceholder(PriceId))
             {
                 try
                 {
-                    createdSub = await client.CreateSubscriptionAsync(created.Id, _fx.PriceId);
+                    createdSub = await client.CreateSubscriptionAsync(created.Id, PriceId);
                     Assert.NotNull(createdSub);
                 }
                 catch (Exception ex) when (ex.Message.Contains("MethodNotAllowed", StringComparison.OrdinalIgnoreCase)
@@ -215,10 +148,12 @@ namespace PolarNet.Tests
         {
             var client = GetClientOrSkip();
 
-            Skip.If(PolarSandboxFixture.IsPlaceholder(_fx.PriceId), "PriceId (DefaultPriceId) required for checkout tests.");
+            Skip.If(PolarSandboxFixture.IsPlaceholder(PriceId), "PriceId (DefaultPriceId) required for checkout tests.");
 
             // Create checkout (uses DefaultPriceId from options)
-            var checkout = await client.CreateCheckoutAsync($"buyer-{Guid.NewGuid():N}@mailinator.com", "https://example.com/success");
+            // WebhookBaseUrl is already trimmed in TestBase constructor
+            var webhookUrl = $"{WebhookBaseUrl}/success";
+            var checkout = await client.CreateCheckoutAsync($"buyer-{Guid.NewGuid():N}@mailinator.com", webhookUrl);
             Assert.False(string.IsNullOrWhiteSpace(checkout.Id));
 
             var got = await client.GetCheckoutAsync(checkout.Id);
@@ -387,8 +322,10 @@ namespace PolarNet.Tests
             // Create a test webhook endpoint
             var testUrl = $"https://webhook.site/{Guid.NewGuid():N}";
             var events = new List<string> { "order.created", "subscription.created" };
+            // Webhook secret must be at least 32 characters
+            var secret = "test-secret-" + Guid.NewGuid().ToString("N");
 
-            var created = await client.CreateWebhookEndpointAsync(testUrl, events, "test-secret");
+            var created = await client.CreateWebhookEndpointAsync(testUrl, events, secret);
             Assert.NotNull(created);
             Assert.False(string.IsNullOrWhiteSpace(created.Id));
             Assert.Equal(testUrl, created.Url);
@@ -424,7 +361,7 @@ namespace PolarNet.Tests
         public async Task Webhook_Receives_CustomerCreated_Event()
         {
             var client = GetClientOrSkip();
-            Skip.If(PolarSandboxFixture.IsPlaceholder(_fx.WebhookBaseUrl), "WebhookBaseUrl not configured (tests/appsettings.json → PolarSettings:WebhookBaseUrl, e.g., ngrok URL)");
+            Skip.If(PolarSandboxFixture.IsPlaceholder(WebhookBaseUrl), "WebhookBaseUrl not configured (tests/appsettings.json → PolarSettings:WebhookBaseUrl, e.g., ngrok URL)");
 
             // 1) Mark start time for filtering
             var since = DateTime.UtcNow.AddSeconds(-5);
@@ -444,7 +381,7 @@ namespace PolarNet.Tests
             {
                 try
                 {
-                    var url = new Uri(new Uri(_fx.WebhookBaseUrl!), $"/api/webhook/events?sinceUtc={Uri.EscapeDataString(since.ToString("o"))}&type=customer.created&max=50");
+                    var url = new Uri(new Uri(WebhookBaseUrl!), $"/api/webhook/events?sinceUtc={Uri.EscapeDataString(since.ToString("o"))}&type=customer.created&max=50");
                     var resp = await http.GetAsync(url);
                     var content = await resp.Content.ReadAsStringAsync();
                     resp.EnsureSuccessStatusCode();

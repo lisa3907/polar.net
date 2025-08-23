@@ -1,5 +1,9 @@
 // Enable nullable reference types locally for this file
+#if NETSTANDARD2_0 || NETSTANDARD2_1
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+#else
 #nullable enable
+#endif
 
 using System;
 using System.Collections.Generic;

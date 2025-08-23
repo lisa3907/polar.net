@@ -35,7 +35,7 @@ namespace PolarNet.Services
             {
                 ProductPriceId = priceId,
                 SuccessUrl = successUrl,
-                CustomerEmail = customerEmail ?? string.Empty,
+                CustomerEmail = customerEmail,  // Let it be null if not provided
                 Metadata = new Dictionary<string, string>
                 {
                     { "source", "polar-net" },

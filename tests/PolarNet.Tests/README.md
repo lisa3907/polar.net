@@ -3,7 +3,9 @@
 End-to-end and unit tests for the Polar .NET client. This test project contains:
 
 - Unit tests: fast, isolated tests that do not call Polar APIs.
-- Integration tests: live calls against Polar Sandbox or Production (opt-in via configuration). Integration tests are skippable when credentials are not configured.
+- Integration tests: **REAL API COMMUNICATION** - All tests make actual HTTP requests to Polar's sandbox API server. No mocking or stubbing is used.
+
+**⚠️ IMPORTANT**: All integration tests communicate with the actual Polar API server. See [TEST_CONFIGURATION.md](TEST_CONFIGURATION.md) for detailed setup instructions.
 
 ## What the integration tests cover
 

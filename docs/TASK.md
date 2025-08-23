@@ -5,288 +5,315 @@ This document provides a comprehensive comparison between the `polar.net` (C#) i
 
 **Last Updated**: 2025-08-23
 
+## Recent Updates
+
+### 2025-08-23: Webhook Test Integration Complete
+Successfully integrated and refactored webhook testing infrastructure:
+- **Consolidated Testing**: Merged `WebhookEndpointTests.cs` and `PolarWebhookTests.cs` into comprehensive `Integration/PolarWebhookTests.cs`
+- **Test Coverage**: 13 webhook tests covering both endpoint management (CRUD) and event processing (signature verification, parsing, dispatching)
+- **Build Status**: ✅ All webhook tests passing, no compilation errors or warnings
+- **Fixed Issues**: 
+  - Corrected invalid event type (`payment.succeeded` → `order.paid`)
+  - Adjusted test expectations for unreachable webhook URLs
+- **Organization**: Properly structured with regions, inherits from TestBase for consistency
+
 ---
 
 ## 1. Current Implementation Status
 
-### ✅ Implemented in polar.net
+### ✅ Fully Implemented in polar.net
 
-#### Organization API
-- `GetOrganizationAsync()` - Get organization details
+#### Core APIs (Complete)
+- **Organization API** - Organization details retrieval
+- **Products API** - Product and price management (read operations)
+- **Customers API** - Customer CRUD operations and state management
+- **Subscriptions API** - Full subscription lifecycle management
+- **Orders API** - Order listing and retrieval
+- **Checkouts API** - Checkout session creation and retrieval
+- **Benefits API** - Benefits listing
+- **Payments API** - Payment listing and retrieval ✅
+- **Refunds API** - Full refund operations including partial refunds ✅
+- **Webhook Endpoints API** - Complete webhook management (CRUD + testing) ✅
 
-#### Products API
-- `GetProductAsync(string? productId)` - Get single product
-- `ListProductsAsync(int page, int limit)` - List products with pagination
-- `GetPriceAsync(string priceId)` - Get price details
-- `ListPricesAsync(string productId, int page, int limit)` - List prices for a product
-
-**Missing from Python SDK coverage**:
-- `create()` - Create new product
-- `update()` - Update existing product  
-- `update_benefits()` - Update product benefits
-
-#### Customers API
-- `CreateCustomerAsync(string email, string? name)` - Create customer (basic)
-- `CreateCustomerAsync(CreateCustomerRequest)` - Create customer (advanced)
-- `ListCustomersAsync(int page, int limit)` - List customers
-- `GetCustomerAsync(string customerId)` - Get customer by ID
-- `DeleteCustomerAsync(string customerId)` - Delete customer
-- `GetCustomerStateAsync(string customerId)` - Get customer state
-
-**Missing from Python SDK coverage**:
-- `update()` - Update customer
-- `get_external()` - Get by external ID
-- `update_external()` - Update by external ID
-- `delete_external()` - Delete by external ID
-- `get_state_external()` - Get state by external ID
-
-#### Subscriptions API
-- `CreateSubscriptionAsync(string customerId, string? priceId)` - Create subscription
-- `ListSubscriptionsAsync(int page, int limit)` - List subscriptions
-- `GetSubscriptionAsync(string subscriptionId)` - Get subscription
-- `CancelSubscriptionAsync(string subscriptionId)` - Cancel subscription
-- `RevokeSubscriptionAsync(string subscriptionId)` - Revoke subscription
-
-**Missing from Python SDK coverage**:
-- `update()` - Update subscription details
-- `import()` - Import external subscriptions
-
-#### Checkouts API
-- `CreateCheckoutAsync(string? email, string? successUrl)` - Create checkout session
-- `GetCheckoutAsync(string checkoutId)` - Get checkout details
-
-**Missing from Python SDK coverage**:
-- `update()` - Update checkout session
-- Full checkout links management
-
-#### Orders API
-- `ListOrdersAsync(int page, int limit)` - List orders
-- `GetOrderAsync(string orderId)` - Get order details
-
-**Missing from Python SDK coverage**:
-- `invoice()` - Get order invoice
-
-#### Benefits API
-- `ListBenefitsAsync(int page, int limit)` - List benefits
-
-**Missing from Python SDK coverage**:
-- `create()` - Create benefit
-- `update()` - Update benefit
-- `delete()` - Delete benefit
-- `grant()` - Grant benefit to customer
-- `revoke()` - Revoke benefit from customer
+### 📊 Implementation Coverage
+- **Total Python SDK Modules**: 22 primary resource modules
+- **Implemented in .NET**: 11 modules
+- **Coverage**: ~50% of core functionality
 
 ---
 
-## 2. Missing API Domains in polar.net
+## 2. Missing Features by Priority
 
-### 🔴 Not Implemented (22 modules)
+### 🚨 Priority 1: Critical Business Features
+These are essential for production-ready SDK:
 
-1. **payments** - Payment processing and management
-2. **refunds** - Refund operations
-3. **files** - File upload/download management
-4. **events** - Event logging and retrieval
-5. **webhooks** - Webhook endpoint management (CRUD operations)
-6. **discounts** - Discount/coupon management
-7. **license_keys** - License key generation and validation
-8. **customer_meters** - Usage metering for customers
-9. **meters** - Meter definitions and management
-10. **metrics** - Analytics and metrics API
-11. **downloadables** - Digital asset management
-12. **custom_fields** - Custom field definitions
-13. **customer_sessions** - Customer session management
-14. **customer_portal** - Customer portal configuration
-15. **oauth2** - OAuth2 authentication flow
-16. **ingestion** - Bulk data import
-17. **checkout_links** - Reusable checkout link management
-18. **benefit_grants** - Benefit grant management
-19. **customer_portal_tokens** - Portal authentication tokens
-20. **external_organizations** - External org management
-21. **advertisements** - Ad campaign management
-22. **issues** - Issue/ticket management
+#### 1. **Customer Updates API**
+   - `UpdateCustomerAsync()` - Update customer information
+   - **Importance**: Essential for customer data management
+   - **Effort**: Low (1-2 days)
+
+#### 2. **Product Management API**
+   - `CreateProductAsync()` - Create new products
+   - `UpdateProductAsync()` - Update product details
+   - `DeleteProductAsync()` - Remove products
+   - **Importance**: Required for dynamic product catalog
+   - **Effort**: Medium (2-3 days)
+
+#### 3. **Order Invoice API**
+   - `GetOrderInvoiceAsync()` - Generate/retrieve invoices
+   - **Importance**: Critical for accounting/compliance
+   - **Effort**: Low (1 day)
 
 ---
 
-## 3. Priority Task List
+### 🟠 Priority 2: Revenue Enhancement Features
 
-### 🚨 Critical Priority (Core Business Functions)
-These APIs are essential for complete payment and subscription management:
+#### 4. **Discounts API**
+   - Create, list, update, delete discount codes
+   - Apply discounts to checkouts
+   - **Importance**: Key for marketing campaigns
+   - **Effort**: Medium (3-4 days)
+   
+#### 5. **License Keys API**
+   - Generate, validate, activate, deactivate license keys
+   - List keys by customer/product
+   - **Importance**: Essential for software licensing models
+   - **Effort**: Medium (3-4 days)
 
-1. **Payments API** 
-   - `list()` - List payments with filters
-   - `get()` - Get payment details
-   - Status: Required for payment tracking
+#### 6. **Checkout Links API**
+   - Create reusable checkout links
+   - Manage link expiration and usage limits
+   - **Importance**: Simplifies payment collection
+   - **Effort**: Medium (2-3 days)
 
-2. **Refunds API**
-   - `create()` - Process refunds
-   - `get()` - Get refund status
-   - Status: Essential for customer service
+#### 7. **Files API**
+   - Upload, download, list, delete files
+   - Manage digital product deliverables
+   - **Importance**: Required for digital content delivery
+   - **Effort**: Medium (3-4 days)
 
-3. **Webhooks Management API**
-   - `create()` - Register webhook endpoints
-   - `list()` - List configured webhooks
-   - `update()` - Update webhook configuration
-   - `delete()` - Remove webhook endpoints
-   - Status: Critical for event-driven architectures
+---
 
-### 🟠 High Priority (Revenue Features)
-These enhance monetization capabilities:
+### 🟡 Priority 3: Enhanced Customer Experience
 
-4. **Discounts API**
-   - `create()` - Create discount codes
-   - `list()` - List discounts
-   - `update()` - Modify discounts
-   - `delete()` - Remove discounts
-   - Status: Important for promotions
+#### 8. **Customer Portal API**
+   - Portal configuration and customization
+   - Generate customer portal access tokens
+   - Self-service subscription management
+   - **Importance**: Reduces support burden
+   - **Effort**: High (5-7 days)
 
-5. **License Keys API**
-   - `generate()` - Create license keys
-   - `validate()` - Verify license keys
-   - `list()` - List keys by customer/product
-   - `revoke()` - Invalidate keys
-   - Status: Required for software licensing
+#### 9. **Customer Sessions API**
+   - Create and manage customer sessions
+   - Session-based authentication
+   - **Importance**: Enables secure customer access
+   - **Effort**: Medium (2-3 days)
 
-6. **Files API**
-   - `upload()` - Upload files
-   - `download()` - Download files
-   - `list()` - List files
-   - `delete()` - Remove files
-   - Status: Needed for digital products
+#### 10. **Benefit Grants API**
+   - Grant/revoke benefits to customers
+   - Track benefit usage
+   - **Importance**: Advanced subscription features
+   - **Effort**: Medium (2-3 days)
 
-### 🟡 Medium Priority (Enhanced Features)
-These add advanced capabilities:
+---
 
-7. **Customer Portal API**
-   - Configure self-service portal
-   - Generate access tokens
-   - Status: Improves customer experience
+### 🟢 Priority 4: Advanced Features
 
-8. **Meters & Metrics APIs**
+#### 11. **Meters & Customer Meters API**
+   - Define usage meters
+   - Track customer usage
    - Usage-based billing support
-   - Analytics and reporting
-   - Status: Required for usage-based pricing
+   - **Importance**: Required for SaaS with usage pricing
+   - **Effort**: High (5-7 days)
 
-9. **Events API**
-   - Event history and audit logs
-   - Status: Important for debugging/auditing
+#### 12. **Events API**
+   - Event ingestion and retrieval
+   - Activity logging and audit trails
+   - **Importance**: Debugging and compliance
+   - **Effort**: Medium (3-4 days)
 
-10. **Custom Fields API**
-    - Dynamic field management
-    - Status: Adds flexibility
+#### 13. **Custom Fields API**
+   - Define custom fields for resources
+   - Dynamic schema extension
+   - **Importance**: Flexibility for complex use cases
+   - **Effort**: Medium (3-4 days)
 
-### 🟢 Low Priority (Nice to Have)
-These can be implemented later:
-
-11. **OAuth2 API** - Third-party authentication
-12. **Ingestion API** - Bulk data import
-13. **External Organizations** - Partner management
-14. **Advertisements** - Ad campaign features
-15. **Issues** - Support ticket system
-
----
-
-## 4. Implementation Recommendations
-
-### Phase 1: Core Payment Completion (Week 1-2)
-- [x] Implement Payments API (list, get methods) ✅ **COMPLETED 2025-08-23**
-- [x] Implement Refunds API (create, get, list methods) ✅ **COMPLETED 2025-08-23**
-- [x] Add Webhook Management API (CRUD operations) ✅ **COMPLETED 2025-08-23**
-- [x] Add comprehensive unit tests for new APIs ✅ **COMPLETED 2025-08-23**
-- [x] Add sample code for new APIs ✅ **COMPLETED 2025-08-23**
-- [ ] Add missing CRUD operations for existing APIs (update methods)
-
-### Phase 2: Revenue Enhancement (Week 3-4)
-- [ ] Add Discounts API
-- [ ] Implement License Keys API
-- [ ] Add Files API for digital downloads
-
-### Phase 3: Customer Experience (Week 5-6)
-- [ ] Customer Portal configuration
-- [ ] Customer Sessions management
-- [ ] Events API for activity tracking
-
-### Phase 4: Advanced Features (Week 7-8)
-- [ ] Meters and usage tracking
-- [ ] Metrics and analytics
-- [ ] Custom fields support
+#### 14. **Downloadables API**
+   - Manage downloadable content
+   - Track download history
+   - **Importance**: Digital product delivery
+   - **Effort**: Medium (2-3 days)
 
 ---
 
-## 5. Technical Improvements Needed
+### 🔵 Priority 5: Integration Features
 
-### Code Organization
-- [ ] Split large partial classes into more granular files
-- [ ] Add interface definitions for better testability
-- [ ] Implement async cancellation token support
+#### 15. **OAuth2 API**
+   - OAuth2 authentication flow
+   - Token management
+   - Third-party integrations
+   - **Importance**: Enterprise integrations
+   - **Effort**: High (5-7 days)
 
-### Error Handling
-- [ ] Add specific exception types (not just `Exception`)
-- [ ] Implement retry logic with exponential backoff
-- [ ] Add detailed error response parsing
-
-### Testing
-- [ ] Increase unit test coverage (current: limited)
-- [ ] Add integration tests for all endpoints
-- [ ] Mock HTTP responses for testing
-
-### Documentation
-- [ ] Add XML documentation for all public methods
-- [ ] Create comprehensive README with examples
-- [ ] Add migration guide from Python SDK
-
-### SDK Features
-- [ ] Add synchronous method variants
-- [ ] Implement request/response interceptors
-- [ ] Add built-in rate limiting
-- [ ] Support for custom HTTP clients
+#### 16. **External ID Support**
+   - Customer operations by external ID
+   - Sync with external systems
+   - **Importance**: System integration
+   - **Effort**: Medium (2-3 days)
 
 ---
 
-## 6. Comparison Summary
+## 3. Implementation Roadmap
 
-| Feature | Python SDK | polar.net | Status |
-|---------|------------|-----------|--------|
-| Total API Modules | 34 | 7 | 📊 20% coverage |
-| Products API | Full CRUD | Read-only | ⚠️ Partial |
-| Customers API | Full + External ID | Basic CRUD | ⚠️ Partial |
-| Subscriptions | Full | Basic | ✅ Adequate |
-| Payments | ✅ Complete | ❌ Missing | 🚨 Critical |
-| Refunds | ✅ Complete | ❌ Missing | 🚨 Critical |
-| Webhooks Mgmt | ✅ Complete | ❌ Missing | 🚨 Critical |
-| Files | ✅ Complete | ❌ Missing | 🟠 High |
-| OAuth2 | ✅ Complete | ❌ Missing | 🟢 Low |
-| Async Support | ✅ Both | ✅ Async-only | ✅ Good |
-| Error Handling | ✅ Typed | ⚠️ Generic | ⚠️ Needs work |
+### Sprint 1: Core Completeness (Week 1-2)
+- [ ] Customer Update API
+- [ ] Product CRUD operations
+- [ ] Order Invoice API
+- [ ] Update existing models for missing properties
 
----
+### Sprint 2: Revenue Features (Week 3-4)
+- [ ] Discounts API (full CRUD)
+- [ ] License Keys API
+- [ ] Checkout Links API
 
-## 7. Migration Path from Python to .NET
+### Sprint 3: Digital Delivery (Week 5-6)
+- [ ] Files API
+- [ ] Downloadables API
+- [ ] Benefit Grants API
 
-For teams migrating from Python SDK to polar.net:
+### Sprint 4: Customer Experience (Week 7-8)
+- [ ] Customer Portal API
+- [ ] Customer Sessions API
+- [ ] External ID support
 
-### Currently Supported
-✅ Basic customer management
-✅ Product listing and retrieval
-✅ Subscription lifecycle
-✅ Order retrieval
-✅ Basic checkout creation
-✅ Webhook receiving (not management)
+### Sprint 5: Advanced Features (Week 9-10)
+- [ ] Meters API
+- [ ] Customer Meters API
+- [ ] Events API
+- [ ] Custom Fields API
 
-### Not Yet Supported
-❌ Payment processing details
-❌ Refund operations
-❌ File management
-❌ Advanced customer features (external IDs)
-❌ Discount management
-❌ License key operations
-❌ Usage metering
-❌ OAuth2 flows
-
-### Workarounds
-- Use direct HTTP calls for missing endpoints
-- Implement custom wrapper methods
-- Consider hybrid approach (Python for missing features)
+### Sprint 6: Enterprise Features (Week 11-12)
+- [ ] OAuth2 implementation
+- [ ] Advanced webhook features
+- [ ] Batch operations support
 
 ---
 
-_This analysis is based on the polar-python SDK as of 2025-08-23 and polar.net implementation status._
+## 4. Technical Debt & Improvements
+
+### High Priority Technical Improvements
+1. **Model Property Gaps**
+   - Many model properties are missing compared to Python SDK
+   - Need systematic review and update of all models
+   - Examples: Subscription.StartedAt, Order.ModifiedAt, etc.
+
+2. **Error Handling**
+   - Implement typed exceptions (PolarApiException, PolarValidationException, etc.)
+   - Add proper error response parsing
+   - Implement retry logic with exponential backoff
+
+3. **Testing Coverage**
+   - Current test coverage is minimal
+   - Need comprehensive unit tests for all APIs
+   - Add integration tests with mock responses
+
+### Medium Priority Improvements
+4. **SDK Features**
+   - Add synchronous method variants
+   - Implement request/response interceptors
+   - Add built-in rate limiting
+   - Support for custom HTTP clients
+
+5. **Documentation**
+   - Complete XML documentation for all public APIs
+   - Add code examples for each endpoint
+   - Create migration guide from Python SDK
+
+6. **Code Organization**
+   - Consider splitting large partial classes
+   - Add interface definitions for testability
+   - Implement dependency injection support
+
+### Low Priority Enhancements
+7. **Performance**
+   - Implement connection pooling
+   - Add caching layer for read operations
+   - Optimize JSON serialization
+
+8. **Developer Experience**
+   - Add fluent API builders
+   - Implement LINQ support for queries
+   - Add async enumerable support for pagination
+
+---
+
+## 5. Breaking Changes to Consider
+
+When implementing missing features, consider these potential breaking changes:
+
+1. **Model Updates**: Adding missing properties might require nullable types
+2. **Method Signatures**: Some methods may need additional parameters
+3. **Return Types**: Some operations might need to return different types
+4. **Namespace Changes**: Consider reorganizing namespaces for better structure
+
+---
+
+## 6. Success Metrics
+
+### Phase 1 Complete When:
+- [ ] All CRUD operations available for core resources
+- [ ] 100% unit test coverage for new code
+- [ ] Documentation complete for all public APIs
+- [ ] Sample application demonstrates all features
+
+### Phase 2 Complete When:
+- [ ] Feature parity with Python SDK for core functionality
+- [ ] All high and medium priority APIs implemented
+- [ ] Integration tests passing
+- [ ] Performance benchmarks established
+
+### SDK v1.0 Release Criteria:
+- [ ] 80%+ feature parity with Python SDK
+- [ ] Comprehensive documentation
+- [ ] NuGet package published
+- [ ] Migration guide available
+- [ ] Production-ready error handling
+
+---
+
+## 7. Resource Requirements
+
+### Estimated Timeline
+- **Total Development**: 12 weeks for full feature parity
+- **Testing & Documentation**: Additional 2 weeks
+- **Total Project Duration**: 14 weeks
+
+### Team Requirements
+- **Developers**: 1-2 senior .NET developers
+- **Testing**: 1 QA engineer (part-time)
+- **Documentation**: Technical writer (part-time)
+
+---
+
+## 8. Dependencies & Risks
+
+### Dependencies
+- Polar API stability and backwards compatibility
+- Access to Polar API documentation
+- Test/sandbox environment availability
+
+### Risks
+- API changes during development
+- Missing or incomplete API documentation
+- Performance issues with large datasets
+- Breaking changes in dependent packages
+
+### Mitigation Strategies
+- Regular sync with Polar team
+- Implement versioning strategy
+- Comprehensive test coverage
+- Monitor Python SDK for changes
+
+---
+
+_This roadmap is based on the polar-python SDK analysis as of 2025-08-23 and current polar.net implementation status._
