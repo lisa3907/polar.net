@@ -1,0 +1,27 @@
+feat(samples): refactor polar.sample project with category-based demo architecture
+
+- Split monolithic Program.cs into 8 category-specific demo files for better organization
+- Implement DemoBase abstract class for shared functionality and code reuse
+- Create interactive menu system for improved user experience
+- Add comprehensive demo implementations for all Polar API categories:
+  * ProductDemo: Product and price operations
+  * CustomerDemo: Customer management with CRUD operations
+  * OrderDemo: Order and checkout workflows
+  * SubscriptionDemo: Subscription lifecycle management
+  * PaymentDemo: Payment and refund operations
+  * WebhookDemo: Webhook endpoint management
+  * BenefitDemo: Benefits listing functionality
+  * OrganizationDemo: Organization information display
+
+- Fix model compatibility issues by handling missing properties:
+  * Comment out references to non-existent fields with explanatory notes
+  * Update subscription cancel/revoke methods to handle boolean returns
+  * Adapt demo code to match actual PolarNet model definitions
+
+- Improve error handling and user feedback throughout demos
+- Maintain configuration validation and conditional debug mode support
+
+BREAKING CHANGE: None - Maintains backward compatibility while improving structure
+
+The refactoring improves maintainability, readability, and extensibility of the sample
+project while providing clear examples for each API category.
