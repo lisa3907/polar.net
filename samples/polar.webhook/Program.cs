@@ -5,6 +5,15 @@ using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Use appsettings.Development.json in DEBUG mode
+var configBuilder = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+#if DEBUG
+configBuilder = configBuilder.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
+#endif
+builder.Configuration.AddConfiguration(configBuilder.Build());
+
 // Add services to the container
 builder.Services.AddControllersWithViews();
 builder.Services.AddEndpointsApiExplorer();
@@ -77,7 +86,7 @@ app.Lifetime.ApplicationStarted.Register(() =>
     var urls = config["ASPNETCORE_URLS"] ?? "http://localhost:5000";
     logger.LogInformation("🚀 Webhook Server started at: {Urls}", urls);
     logger.LogInformation("📌 Webhook endpoint: {Endpoint}", $"{urls}/api/webhook/polar");
-    logger.LogInformation("💡 ngrok 실행: ngrok http 5000");
+    logger.LogInformation("💡 ngrok run: ngrok http 5000");
 });
 
 app.Run();

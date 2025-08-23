@@ -26,10 +26,13 @@ namespace PolarNet.Tests
 
         public Task InitializeAsync()
         {
-            _config = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", optional: true)
-                .AddEnvironmentVariables(prefix: "POLAR_TEST_")
-                .Build();
+            var configBuilder = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: true);
+#if DEBUG
+            configBuilder = configBuilder.AddJsonFile("appsettings.Development.json", optional: true);
+#endif
+            configBuilder = configBuilder.AddEnvironmentVariables(prefix: "POLAR_TEST_");
+            _config = configBuilder.Build();
 
             var section = _config.GetSection("PolarSettings");
             var accessToken = section["AccessToken"] ?? string.Empty;
@@ -38,7 +41,7 @@ namespace PolarNet.Tests
             OrganizationId = section["OrganizationId"];
             ProductId = section["ProductId"];
             PriceId = section["PriceId"];
-            WebhookBaseUrl = section["WebhookBaseUrl"]; // e.g., https://abc123.ngrok-free.app
+            WebhookBaseUrl = section["WebhookBaseUrl"];
 
             if (IsPlaceholder(accessToken) || string.IsNullOrWhiteSpace(baseUrl))
             {
