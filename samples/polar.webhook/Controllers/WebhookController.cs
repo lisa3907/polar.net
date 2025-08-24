@@ -38,7 +38,7 @@ public class WebhookController : ControllerBase
             endpoints = new[]
             {
                 "/api/webhook/test - test endpoint",
-                "/api/webhook/polar - Polar webhook receive"
+                "/api/webhook/polar - Polar webhook receiver"
             }
         });
     }
