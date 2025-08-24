@@ -34,15 +34,25 @@ public sealed class PolarWebhookService
 
         using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_secret));
         var hash = hmac.ComputeHash(rawBody);
-        var computed = Convert.ToBase64String(hash);
 
-        // Fixed-time comparison fallback for older TFMs
-        var a = Encoding.UTF8.GetBytes(computed);
-        var b = Encoding.UTF8.GetBytes(signatureBase64);
-        if (a.Length != b.Length) return false;
+        byte[] provided;
+        try
+        {
+            provided = Convert.FromBase64String(signatureBase64);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+
+#if NETSTANDARD2_0
+        if (hash.Length != provided.Length) return false;
         var diff = 0;
-        for (int i = 0; i < a.Length; i++) diff |= a[i] ^ b[i];
+        for (int i = 0; i < hash.Length; i++) diff |= hash[i] ^ provided[i];
         return diff == 0;
+#else
+        return CryptographicOperations.FixedTimeEquals(hash, provided);
+#endif
     }
 
     /// <summary>
