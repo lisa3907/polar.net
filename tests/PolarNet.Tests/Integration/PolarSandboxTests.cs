@@ -346,7 +346,7 @@ namespace PolarNet.Tests.Integration
                 // Test the webhook endpoint
                 var testResult = await client.TestWebhookEndpointAsync(created.Id);
                 // Note: Test might fail if the URL is not reachable, but the method should work
-                // testResult is a bool (value type), no need for null check
+                Assert.True(testResult, "Testing the webhook endpoint returned false. Ensure the webhook site URL is reachable.");
             }
             finally
             {
