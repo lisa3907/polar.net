@@ -19,7 +19,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarListResponse<PolarBenefit>> ListBenefitsAsync(int page = 1, int limit = 10)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/benefits?limit={limit}&page={page}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/benefits?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarBenefit>>(json)

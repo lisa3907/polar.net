@@ -20,7 +20,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarListResponse<PolarOrder>> ListOrdersAsync(int page = 1, int limit = 10)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/orders?limit={limit}&page={page}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/orders?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarOrder>>(json)
@@ -36,7 +36,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarOrder> GetOrderAsync(string orderId)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/orders/{orderId}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/orders/{orderId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarOrder>(json)

@@ -28,7 +28,7 @@ namespace PolarNet.Services
         public async Task<PolarProduct> GetProductAsync(string? productId = null)
         {
             var pid = productId ?? _defaultProductId ?? throw new ArgumentException("ProductId must be supplied or DefaultProductId set in options");
-            var response = await SendAsync(HttpMethod.Get, $"/v1/products/{pid}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/products/{pid}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarProduct>(json)
@@ -45,7 +45,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarListResponse<PolarProduct>> ListProductsAsync(int page = 1, int limit = 10)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/products?limit={limit}&page={page}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/products?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarProduct>>(json)
@@ -61,7 +61,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarPrice> GetPriceAsync(string priceId)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/prices/{priceId}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/prices/{priceId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarPrice>(json)
@@ -81,7 +81,7 @@ namespace PolarNet.Services
         public async Task<PolarListResponse<PolarPrice>> ListPricesAsync(string productId, int page = 1, int limit = 10)
         {
             if (string.IsNullOrWhiteSpace(productId)) throw new ArgumentException("productId is required", nameof(productId));
-            var response = await SendAsync(HttpMethod.Get, $"/v1/products/{productId}/prices?limit={limit}&page={page}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/products/{productId}/prices?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarPrice>>(json)

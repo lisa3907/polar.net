@@ -45,7 +45,7 @@ namespace PolarNet.Services
 
             var json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await SendAsync(HttpMethod.Post, "/v1/checkouts", content);
+            using var response = await SendAsync(HttpMethod.Post, "/v1/checkouts", content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -67,7 +67,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarCheckout> GetCheckoutAsync(string checkoutId)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/checkouts/{checkoutId}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/checkouts/{checkoutId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarCheckout>(json)

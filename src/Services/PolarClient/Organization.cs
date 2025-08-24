@@ -22,7 +22,7 @@ namespace PolarNet.Services
         public async Task<PolarOrganization> GetOrganizationAsync()
         {
             var orgId = _organizationId ?? throw new ArgumentException("OrganizationId must be provided in options");
-            var response = await SendAsync(HttpMethod.Get, $"/v1/organizations/{orgId}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/organizations/{orgId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarOrganization>(json)

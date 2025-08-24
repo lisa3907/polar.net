@@ -34,7 +34,7 @@ namespace PolarNet.Services
 
             var json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await SendAsync(HttpMethod.Post, "/v1/refunds", content);
+            using var response = await SendAsync(HttpMethod.Post, "/v1/refunds", content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -115,7 +115,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarListResponse<PolarRefund>> ListRefundsAsync(int page = 1, int limit = 10)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/refunds?limit={limit}&page={page}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/refunds?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarRefund>>(json)
@@ -131,7 +131,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarRefund> GetRefundAsync(string refundId)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/refunds/{refundId}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/refunds/{refundId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarRefund>(json)
