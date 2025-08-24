@@ -13,15 +13,27 @@ namespace PolarNet.Models
     /// </summary>
     public class CreateRefundRequest
     {
+        /// <summary>
+        /// The associated order identifier to refund.
+        /// </summary>
         [JsonPropertyName("order_id")]
         public string OrderId { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Free-text reason for the refund.
+        /// </summary>
         [JsonPropertyName("reason")]
         public string Reason { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Optional operator comment or note for the refund.
+        /// </summary>
         [JsonPropertyName("comment")]
         public string? Comment { get; set; }
 
+        /// <summary>
+        /// Optional amount to refund in the smallest currency unit. If omitted, a full refund may be processed depending on API semantics.
+        /// </summary>
         [JsonPropertyName("amount")]
         public long? Amount { get; set; }
     }

@@ -1,0 +1,22 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+root = true
+
+[*.md]
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+# Advisory: English-only documentation
+spelling_language = en
+
+[*.cs]
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+# Encourage XML documentation for public APIs
+# (Suggestion level; we rely on reviews/CI to enforce when needed)
+dotnet_diagnostic.SA1600.severity = suggestion
+
+dotnet_style_qualification_for_field = false:suggestion
+
+dotnet_style_require_accessibility_modifiers = always:suggestion

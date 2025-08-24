@@ -218,6 +218,31 @@ namespace PolarNet.Tests.Categories
         }
 
         [Fact]
+        public async Task UpdateCustomer_ShouldModifyFields()
+        {
+            // Arrange
+            SkipIfNoClient(nameof(UpdateCustomer_ShouldModifyFields));
+            var customer = await Client!.CreateCustomerAsync(GenerateTestEmail(), $"User {GenerateTestId()}");
+
+            try
+            {
+                var newName = $"Updated {GenerateTestId()}";
+                var req = new UpdateCustomerRequest { Name = newName };
+
+                // Act
+                var updated = await Client.UpdateCustomerAsync(customer.Id, req);
+
+                // Assert
+                Assert.NotNull(updated);
+                Assert.Equal(customer.Id, updated.Id);
+                Assert.Equal(newName, updated.Name);
+            }
+            finally
+            {
+                await Client.DeleteCustomerAsync(customer.Id);
+            }
+        }
+        [Fact]
         public async Task ListCustomers_WithPagination_ShouldRespectLimits()
         {
             // Arrange

@@ -165,5 +165,28 @@ namespace PolarNet.Tests.Categories
             Log($"  Amount: {order.Amount}");
             Log($"  Currency: {order.Currency}");
         }
+
+        [Fact]
+        public async Task OrderInvoice_GenerateAndRetrieve_ShouldWork()
+        {
+            // Arrange
+            SkipIfNoClient(nameof(OrderInvoice_GenerateAndRetrieve_ShouldWork));
+            var orders = await Client!.ListOrdersAsync(1, 1);
+            Skip.If(orders.Items.Count == 0, "No orders available to test invoice");
+            var orderId = orders.Items[0].Id;
+
+            // Act: generate invoice (idempotent in API)
+            var generated = await Client.GenerateOrderInvoiceAsync(orderId);
+            Assert.True(generated);
+
+            // Retrieve invoice (may require eventual consistency)
+            var invoice = await RetryAsync(() => Client.GetOrderInvoiceAsync(orderId), maxAttempts: 3, delayMs: 1000);
+
+            // Assert
+            Assert.NotNull(invoice);
+            Assert.Equal(orderId, invoice.OrderId);
+            Assert.True(invoice.AmountTotal >= 0);
+            Assert.Matches("^[A-Z]{3}$", invoice.Currency);
+        }
     }
 }

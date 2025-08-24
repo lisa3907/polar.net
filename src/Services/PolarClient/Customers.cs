@@ -127,5 +127,31 @@ namespace PolarNet.Services
             using var response = await SendAsync(HttpMethod.Delete, $"/v1/customers/{customerId}");
             return response.IsSuccessStatusCode;
         }
+
+        /// <summary>
+        /// Updates a customer with provided fields.
+        /// </summary>
+        /// <param name="customerId">Customer identifier.</param>
+        /// <param name="request">Fields to update (only provided fields are updated).</param>
+        /// <returns>The updated <see cref="PolarCustomer"/>.</returns>
+        public async Task<PolarCustomer> UpdateCustomerAsync(string customerId, UpdateCustomerRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(customerId))
+                throw new ArgumentException("customerId is required", nameof(customerId));
+            if (request is null)
+                throw new ArgumentNullException(nameof(request));
+
+            var json = JsonSerializer.Serialize(request);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            using var response = await SendAsync(new HttpMethod("PATCH"), $"/v1/customers/{customerId}", content);
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Failed to update customer: {response.StatusCode} - {error}");
+            }
+            var responseContent = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<PolarCustomer>(responseContent)
+                   ?? throw new InvalidOperationException("Failed to deserialize PolarCustomer");
+        }
     }
 }

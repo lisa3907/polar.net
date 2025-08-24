@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using PolarNet.Tests.Base;
+using PolarNet.Models;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -178,6 +179,43 @@ namespace PolarNet.Tests.Categories
                 $"Expected at most {requestedLimit} items, but got {products.Items.Count}");
             
             Log($"✓ Pagination respected: requested {requestedLimit}, received {products.Items.Count}");
+        }
+
+        [Fact]
+        public async Task Product_Crud_Lifecycle_ShouldSucceed()
+        {
+            // Arrange
+            SkipIfNoClient(nameof(Product_Crud_Lifecycle_ShouldSucceed));
+
+            var create = new CreateProductRequest
+            {
+                Name = $"SDK Test Product {GenerateTestId()}",
+                Description = "Created by automated test",
+                IsRecurring = false
+            };
+
+            // Act - Create
+            var product = await Client!.CreateProductAsync(create);
+            Assert.NotNull(product);
+            Assert.NotEmpty(product.Id);
+
+            try
+            {
+                // Update
+                var update = new UpdateProductRequest { Description = "Updated by test" };
+                var updated = await Client.UpdateProductAsync(product.Id, update);
+                Assert.NotNull(updated);
+                Assert.Equal(product.Id, updated.Id);
+
+                // Delete
+                var deleted = await Client.DeleteProductAsync(product.Id);
+                Assert.True(deleted);
+            }
+            finally
+            {
+                // Best-effort cleanup if delete failed
+                try { await Client.DeleteProductAsync(product.Id); } catch { }
+            }
         }
     }
 }

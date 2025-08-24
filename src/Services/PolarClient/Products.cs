@@ -9,6 +9,7 @@ using PolarNet.Models;
 using System.Text.Json;
 using System.Net.Http;
 using System;
+using System.Text;
 
 namespace PolarNet.Services
 {
@@ -86,6 +87,58 @@ namespace PolarNet.Services
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarPrice>>(json)
                    ?? throw new InvalidOperationException("Failed to deserialize price list");
+        }
+
+        /// <summary>
+        /// Creates a new product.
+        /// </summary>
+        public async Task<PolarProduct> CreateProductAsync(CreateProductRequest request)
+        {
+            if (request is null) throw new ArgumentNullException(nameof(request));
+            if (string.IsNullOrWhiteSpace(request.Name)) throw new ArgumentException("Name is required", nameof(request.Name));
+
+            var json = JsonSerializer.Serialize(request);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            using var response = await SendAsync(HttpMethod.Post, "/v1/products", content);
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Failed to create product: {response.StatusCode} - {error}");
+            }
+            var responseContent = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<PolarProduct>(responseContent)
+                   ?? throw new InvalidOperationException("Failed to deserialize PolarProduct");
+        }
+
+        /// <summary>
+        /// Updates an existing product.
+        /// </summary>
+        public async Task<PolarProduct> UpdateProductAsync(string productId, UpdateProductRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(productId)) throw new ArgumentException("productId is required", nameof(productId));
+            if (request is null) throw new ArgumentNullException(nameof(request));
+
+            var json = JsonSerializer.Serialize(request);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            using var response = await SendAsync(new HttpMethod("PATCH"), $"/v1/products/{productId}", content);
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Failed to update product: {response.StatusCode} - {error}");
+            }
+            var responseContent = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<PolarProduct>(responseContent)
+                   ?? throw new InvalidOperationException("Failed to deserialize PolarProduct");
+        }
+
+        /// <summary>
+        /// Deletes a product by id.
+        /// </summary>
+        public async Task<bool> DeleteProductAsync(string productId)
+        {
+            if (string.IsNullOrWhiteSpace(productId)) throw new ArgumentException("productId is required", nameof(productId));
+            using var response = await SendAsync(HttpMethod.Delete, $"/v1/products/{productId}");
+            return response.IsSuccessStatusCode;
         }
     }
 }

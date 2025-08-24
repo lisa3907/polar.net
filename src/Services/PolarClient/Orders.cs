@@ -42,5 +42,33 @@ namespace PolarNet.Services
             return JsonSerializer.Deserialize<PolarOrder>(json)
                    ?? throw new InvalidOperationException("Failed to deserialize PolarOrder");
         }
+
+        /// <summary>
+        /// Requests invoice generation for an order.
+        /// </summary>
+        /// <remarks>
+        /// API: POST /v1/orders/{id}/invoice
+        /// </remarks>
+        public async Task<bool> GenerateOrderInvoiceAsync(string orderId)
+        {
+            if (string.IsNullOrWhiteSpace(orderId)) throw new ArgumentException("orderId is required", nameof(orderId));
+            using var response = await SendAsync(HttpMethod.Post, $"/v1/orders/{orderId}/invoice", new StringContent("{}", System.Text.Encoding.UTF8, "application/json"));
+            return response.IsSuccessStatusCode;
+        }
+
+        /// <summary>
+        /// Retrieves an invoice for an order. Ensure invoice has been generated first.
+        /// </summary>
+        /// <remarks>
+        /// API: GET /v1/orders/{id}/invoice
+        /// </remarks>
+        public async Task<PolarInvoice> GetOrderInvoiceAsync(string orderId)
+        {
+            if (string.IsNullOrWhiteSpace(orderId)) throw new ArgumentException("orderId is required", nameof(orderId));
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/orders/{orderId}/invoice");
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<PolarInvoice>(json) ?? throw new InvalidOperationException("Failed to deserialize PolarInvoice");
+        }
     }
 }
