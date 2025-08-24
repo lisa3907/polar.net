@@ -15,7 +15,7 @@ namespace PolarNet.Services
         /// <summary>
         /// Base URL without trailing /v1. Defaults to sandbox.
         /// </summary>
-        public string BaseUrl { get; set; } = string.Empty;
+        public string BaseUrl { get; set; } = "https://sandbox-api.polar.sh";
         /// <summary>
         /// Default organization ID used for listing/filtering where applicable.
         /// </summary>
