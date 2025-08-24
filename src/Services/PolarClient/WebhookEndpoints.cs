@@ -35,7 +35,7 @@ namespace PolarNet.Services
 
             var json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await SendAsync(HttpMethod.Post, "/v1/webhooks/endpoints", content);
+            using var response = await SendAsync(HttpMethod.Post, "/v1/webhooks/endpoints", content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -86,7 +86,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarListResponse<PolarWebhookEndpoint>> ListWebhookEndpointsAsync(int page = 1, int limit = 10)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/webhooks/endpoints?limit={limit}&page={page}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/webhooks/endpoints?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarWebhookEndpoint>>(json)
@@ -102,7 +102,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarWebhookEndpoint> GetWebhookEndpointAsync(string endpointId)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/webhooks/endpoints/{endpointId}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/webhooks/endpoints/{endpointId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarWebhookEndpoint>(json)
@@ -125,7 +125,7 @@ namespace PolarNet.Services
 
             var json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await SendAsync(new HttpMethod("PATCH"), $"/v1/webhooks/endpoints/{endpointId}", content);
+            using var response = await SendAsync(new HttpMethod("PATCH"), $"/v1/webhooks/endpoints/{endpointId}", content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -145,7 +145,7 @@ namespace PolarNet.Services
         /// <returns><c>true</c> when the API responds with success (2xx); otherwise <c>false</c>.</returns>
         public async Task<bool> DeleteWebhookEndpointAsync(string endpointId)
         {
-            var response = await SendAsync(HttpMethod.Delete, $"/v1/webhooks/endpoints/{endpointId}");
+            using var response = await SendAsync(HttpMethod.Delete, $"/v1/webhooks/endpoints/{endpointId}");
             return response.IsSuccessStatusCode;
         }
 
@@ -167,8 +167,8 @@ namespace PolarNet.Services
                     ? $"/v1/webhooks/endpoints/{endpointId}/test"
                     : $"/v1/webhooks/endpoints/{endpointId}/test?event={eventType}";
                 
-                var response = await SendAsync(HttpMethod.Post, url, new StringContent("{}", Encoding.UTF8, "application/json"));
-                
+                using var response = await SendAsync(HttpMethod.Post, url, new StringContent("{}", Encoding.UTF8, "application/json"));
+
                 // The API typically returns 200 OK even if the webhook delivery fails
                 // Check the response content for actual success
                 if (response.IsSuccessStatusCode)
@@ -178,7 +178,7 @@ namespace PolarNet.Services
                     // The actual webhook delivery may still fail if the URL is unreachable
                     return string.IsNullOrWhiteSpace(content) || !content.Contains("\"error\"");
                 }
-                
+
                 return false;
             }
             catch

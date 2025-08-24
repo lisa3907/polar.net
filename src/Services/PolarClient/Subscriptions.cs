@@ -32,13 +32,12 @@ namespace PolarNet.Services
             var request = new CreateSubscriptionRequest { ProductPriceId = pid };
             var json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await SendAsync(HttpMethod.Post, $"/v1/customers/{customerId}/subscriptions", content);
+            using var response = await SendAsync(HttpMethod.Post, $"/v1/customers/{customerId}/subscriptions", content);
 
             // If not found or method not allowed, fallback to POST /v1/subscriptions with { customer_id, product_price_id }
             if (!response.IsSuccessStatusCode &&
                 (response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.MethodNotAllowed))
             {
-                response.Dispose();
                 var altPayload = new
                 {
                     customer_id = customerId,
@@ -46,7 +45,17 @@ namespace PolarNet.Services
                 };
                 var altJson = JsonSerializer.Serialize(altPayload);
                 var altContent = new StringContent(altJson, Encoding.UTF8, "application/json");
-                response = await SendAsync(HttpMethod.Post, "/v1/subscriptions", altContent);
+                using var altResponse = await SendAsync(HttpMethod.Post, "/v1/subscriptions", altContent);
+
+                if (!altResponse.IsSuccessStatusCode)
+                {
+                    var altError = await altResponse.Content.ReadAsStringAsync();
+                    throw new Exception($"Failed to create subscription: {altResponse.StatusCode} - {altError}");
+                }
+
+                var altResponseContent = await altResponse.Content.ReadAsStringAsync();
+                return JsonSerializer.Deserialize<PolarSubscription>(altResponseContent)
+                       ?? throw new InvalidOperationException("Failed to deserialize PolarSubscription");
             }
 
             if (!response.IsSuccessStatusCode)
@@ -71,7 +80,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarListResponse<PolarSubscription>> ListSubscriptionsAsync(int page = 1, int limit = 10)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/subscriptions?limit={limit}&page={page}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/subscriptions?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarSubscription>>(json)
@@ -87,7 +96,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarSubscription> GetSubscriptionAsync(string subscriptionId)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/subscriptions/{subscriptionId}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/subscriptions/{subscriptionId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarSubscription>(json)
@@ -101,7 +110,7 @@ namespace PolarNet.Services
         /// <returns><c>true</c> when the API responds with a success (2xx) status code; otherwise <c>false</c>.</returns>
         public async Task<bool> CancelSubscriptionAsync(string subscriptionId)
         {
-            var response = await SendAsync(HttpMethod.Delete, $"/v1/subscriptions/{subscriptionId}");
+            using var response = await SendAsync(HttpMethod.Delete, $"/v1/subscriptions/{subscriptionId}");
             return response.IsSuccessStatusCode;
         }
 
@@ -115,17 +124,17 @@ namespace PolarNet.Services
         {
             // Primary path: POST /v1/subscriptions/{id}/revoke with empty body
             var content = new StringContent("{}", Encoding.UTF8, "application/json");
-            var response = await SendAsync(HttpMethod.Post, $"/v1/subscriptions/{subscriptionId}/revoke", content);
+            using var response = await SendAsync(HttpMethod.Post, $"/v1/subscriptions/{subscriptionId}/revoke", content);
 
             // Fallback path when not found/method not allowed: POST /v1/subscriptions/revoke { subscription_id }
             if (!response.IsSuccessStatusCode &&
                 (response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.MethodNotAllowed))
             {
-                response.Dispose();
                 var payload = new { subscription_id = subscriptionId };
                 var json = JsonSerializer.Serialize(payload);
                 var altContent = new StringContent(json, Encoding.UTF8, "application/json");
-                response = await SendAsync(HttpMethod.Post, "/v1/subscriptions/revoke", altContent);
+                using var altResponse = await SendAsync(HttpMethod.Post, "/v1/subscriptions/revoke", altContent);
+                return altResponse.IsSuccessStatusCode;
             }
 
             return response.IsSuccessStatusCode;

@@ -28,7 +28,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarListResponse<PolarPayment>> ListPaymentsAsync(int page = 1, int limit = 10)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/payments?limit={limit}&page={page}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/payments?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarPayment>>(json)
@@ -44,7 +44,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarPayment> GetPaymentAsync(string paymentId)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/payments/{paymentId}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/payments/{paymentId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarPayment>(json)
@@ -66,7 +66,7 @@ namespace PolarNet.Services
             if (string.IsNullOrWhiteSpace(orderId)) 
                 throw new ArgumentException("orderId is required", nameof(orderId));
             
-            var response = await SendAsync(HttpMethod.Get, $"/v1/payments?order_id={orderId}&limit={limit}&page={page}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/payments?order_id={orderId}&limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarPayment>>(json)
@@ -88,7 +88,7 @@ namespace PolarNet.Services
             if (string.IsNullOrWhiteSpace(customerId)) 
                 throw new ArgumentException("customerId is required", nameof(customerId));
             
-            var response = await SendAsync(HttpMethod.Get, $"/v1/payments?customer_id={customerId}&limit={limit}&page={page}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/payments?customer_id={customerId}&limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarPayment>>(json)

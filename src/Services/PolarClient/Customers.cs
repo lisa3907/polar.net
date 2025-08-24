@@ -35,7 +35,7 @@ namespace PolarNet.Services
             };
             var json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-            var response = await SendAsync(HttpMethod.Post, "/v1/customers", content);
+            using var response = await SendAsync(HttpMethod.Post, "/v1/customers", content);
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();
@@ -57,7 +57,7 @@ namespace PolarNet.Services
         {
             var json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-            var response = await SendAsync(HttpMethod.Post, "/v1/customers", content);
+            using var response = await SendAsync(HttpMethod.Post, "/v1/customers", content);
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();
@@ -77,7 +77,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarCustomerState> GetCustomerStateAsync(string customerId)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/customers/{customerId}/state");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/customers/{customerId}/state");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarCustomerState>(json)
@@ -94,7 +94,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarListResponse<PolarCustomer>> ListCustomersAsync(int page = 1, int limit = 10)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/customers?limit={limit}&page={page}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/customers?limit={limit}&page={page}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarListResponse<PolarCustomer>>(json)
@@ -110,7 +110,7 @@ namespace PolarNet.Services
         /// <exception cref="InvalidOperationException">Thrown when deserialization fails.</exception>
         public async Task<PolarCustomer> GetCustomerAsync(string customerId)
         {
-            var response = await SendAsync(HttpMethod.Get, $"/v1/customers/{customerId}");
+            using var response = await SendAsync(HttpMethod.Get, $"/v1/customers/{customerId}");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PolarCustomer>(json)
@@ -124,7 +124,7 @@ namespace PolarNet.Services
         /// <returns><c>true</c> when the API responds with success (2xx); otherwise <c>false</c>.</returns>
         public async Task<bool> DeleteCustomerAsync(string customerId)
         {
-            var response = await SendAsync(HttpMethod.Delete, $"/v1/customers/{customerId}");
+            using var response = await SendAsync(HttpMethod.Delete, $"/v1/customers/{customerId}");
             return response.IsSuccessStatusCode;
         }
     }
