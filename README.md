@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%209.0-blue.svg)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 [![Downloads](https://img.shields.io/nuget/dt/PolarNet.svg)](https://www.nuget.org/packages/PolarNet/)
-[![API Coverage](https://img.shields.io/badge/API%20Coverage-45%25-yellow.svg)](docs/TASK.md)
+[![API Coverage](https://img.shields.io/badge/API%20Coverage-55%25-yellow.svg)](docs/TASK.md)
 
  Thin C# client library for [Polar.sh](https://polar.sh) API - Modern billing infrastructure for developers.
 
